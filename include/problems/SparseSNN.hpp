@@ -14,6 +14,7 @@
 #include <set>
 #include <algorithm>
 #include <memory>
+#include <omp.h>
 
 // Multi-objective optimization of a spiking neural network on classification tasks.
 // Objectives (both minimized):
@@ -47,13 +48,14 @@ public:
 
     void Setting() override {
         loadData();
-        buildNetwork();
 
         M = 2;
         D = nFeatures * nHidden + nHidden * nClasses;
         lower    = Vector::Constant(D, 0.0);
         upper    = Vector::Constant(D, 1.0);
         encoding.assign(D, 1);  // all real
+
+        buildPool();
     }
 
     Population Initialization(int n = -1) override {
@@ -78,18 +80,19 @@ public:
         int n = dec.rows();
         Matrix obj(n, 2);
 
-        std::vector<double> weights(D);
+        #pragma omp parallel for schedule(dynamic)
         for (int i = 0; i < n; i++) {
+            int tid = omp_get_thread_num();
+
+            std::vector<double> weights(D);
             for (int j = 0; j < D; j++) weights[j] = dec(i, j);
 
-            // f1: fraction of non-zero weights
             int nzCount = 0;
             for (double w : weights) if (w > 0.0) nzCount++;
             obj(i, 0) = static_cast<double>(nzCount) / D;
 
-            // f2: training classification error
-            sim->setWeights(weights);
-            double acc = sim->evaluateAccuracy(trainDataset);
+            sim_pool[tid]->setWeights(weights);
+            double acc = sim_pool[tid]->evaluateAccuracy(trainDataset);
             obj(i, 1) = 1.0 - acc;
         }
         return obj;
@@ -100,9 +103,9 @@ public:
     }
 
 private:
-    // Network and simulator are owned here; Simulator holds a raw pointer to net.
-    std::unique_ptr<Network>   net;
-    std::unique_ptr<Simulator> sim;
+    // One Network+Simulator per OpenMP thread — built once in buildPool().
+    std::vector<std::unique_ptr<Network>>   net_pool;
+    std::vector<std::unique_ptr<Simulator>> sim_pool;
 
     void loadData() {
         static const char* filenames[] = {
@@ -178,38 +181,42 @@ private:
             trainDataset.emplace_back(inputs[i], labels[i]);
     }
 
-    void buildNetwork() {
+    std::pair<std::unique_ptr<Network>, std::unique_ptr<Simulator>> makeNetSim() {
         SimulationConfig cfg;
-        cfg.dt                = 1.0;
-        cfg.encoding_duration = 50.0;
+        cfg.dt                  = 1.0;
+        cfg.encoding_duration   = 50.0;
         cfg.evaluation_duration = 100.0;
-        cfg.verbose           = false;
+        cfg.verbose             = false;
 
-        net = std::make_unique<Network>(cfg.dt, /*allow_recurrent=*/false);
+        auto n = std::make_unique<Network>(cfg.dt, /*allow_recurrent=*/false);
 
-        // Input layer
         for (int i = 0; i < nFeatures; i++)
-            net->addInputNeuron(NeuronType::REGULAR_SPIKING);
-
-        // Hidden layer
+            n->addInputNeuron(NeuronType::REGULAR_SPIKING);
         for (int h = 0; h < nHidden; h++)
-            net->addHiddenNeuron(NeuronType::REGULAR_SPIKING);
-
-        // Output layer
+            n->addHiddenNeuron(NeuronType::REGULAR_SPIKING);
         for (int o = 0; o < nClasses; o++)
-            net->addOutputNeuron(NeuronType::REGULAR_SPIKING);
+            n->addOutputNeuron(NeuronType::REGULAR_SPIKING);
 
-        // Synapses: input->hidden  (synapse index = h*nFeatures + i)
         for (int h = 0; h < nHidden; h++)
             for (int i = 0; i < nFeatures; i++)
-                net->addSynapse(i, nFeatures + h, /*excitatory=*/true, /*weight=*/0.0);
-
-        // Synapses: hidden->output  (synapse index = nFeatures*nHidden + o*nHidden + h)
+                n->addSynapse(i, nFeatures + h, /*excitatory=*/true, /*weight=*/0.0);
         for (int o = 0; o < nClasses; o++)
             for (int h = 0; h < nHidden; h++)
-                net->addSynapse(nFeatures + h, nFeatures + nHidden + o, /*excitatory=*/true, /*weight=*/0.0);
+                n->addSynapse(nFeatures + h, nFeatures + nHidden + o, /*excitatory=*/true, /*weight=*/0.0);
 
-        sim = std::make_unique<Simulator>(net.get(), cfg);
-        sim->setEncoder(std::make_unique<RateEncoder>(100.0));
+        auto s = std::make_unique<Simulator>(n.get(), cfg);
+        s->setEncoder(std::make_unique<RateEncoder>(100.0));
+        return {std::move(n), std::move(s)};
+    }
+
+    void buildPool() {
+        int nThreads = omp_get_max_threads();
+        net_pool.resize(nThreads);
+        sim_pool.resize(nThreads);
+        for (int t = 0; t < nThreads; t++) {
+            auto [n, s] = makeNetSim();
+            net_pool[t] = std::move(n);
+            sim_pool[t] = std::move(s);
+        }
     }
 };

@@ -33,8 +33,10 @@ add_library(snn_libs STATIC
 target_include_directories(snn_libs PUBLIC ${SNN_ROOT}/include)
 target_compile_options(snn_libs PRIVATE -O2 -Wall)
 
+find_package(OpenMP REQUIRED)
+
 # ─────────────────────────────────────────────────────────────────────────────
 add_executable(platemo_cpp src/main.cpp)
 target_include_directories(platemo_cpp PRIVATE include ${SNN_ROOT}/include)
-target_link_libraries(platemo_cpp PRIVATE Eigen3::Eigen snn_libs)
+target_link_libraries(platemo_cpp PRIVATE Eigen3::Eigen snn_libs OpenMP::OpenMP_CXX)
 target_compile_options(platemo_cpp PRIVATE -O2 -Wall)
