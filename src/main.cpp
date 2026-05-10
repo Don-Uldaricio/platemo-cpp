@@ -29,6 +29,7 @@ struct RunConfig {
     std::string dataPath;
     bool verbose;
     std::string outFile;
+    std::string csvOutFile;
 };
 
 void printHelp(const char* prog) {
@@ -44,6 +45,7 @@ void printHelp(const char* prog) {
               << "  --seed      <uint>             Random seed (default: random)\n"
               << "  --datapath  <path>             Path to CSV data files (default: data)\n"
               << "  --out       <file>             Save Pareto front to CSV (optional)\n"
+              << "  --csv-out   <file>             Append per-run metrics to CSV (optional)\n"
               << "  --verbose                      Print per-generation progress\n"
               << "\nProblems:\n"
               << "  SparseNN  : Multi-layer ANN with backprop fine-tuning (baseline)\n"
@@ -88,8 +90,9 @@ int main(int argc, char* argv[]) {
     cfg.nRuns     = 1;
     cfg.seed      = std::random_device{}();
     cfg.dataPath  = "data";
-    cfg.verbose   = false;
-    cfg.outFile   = "";
+    cfg.verbose     = false;
+    cfg.outFile     = "";
+    cfg.csvOutFile  = "";
 
     // Parse arguments
     for (int i = 1; i < argc; i++) {
@@ -104,8 +107,9 @@ int main(int argc, char* argv[]) {
         else if (arg == "--runs"     && i+1 < argc) cfg.nRuns     = std::stoi(argv[++i]);
         else if (arg == "--seed"     && i+1 < argc) cfg.seed      = std::stoul(argv[++i]);
         else if (arg == "--datapath" && i+1 < argc) cfg.dataPath  = argv[++i];
-        else if (arg == "--out"      && i+1 < argc) cfg.outFile   = argv[++i];
-        else if (arg == "--verbose")                cfg.verbose   = true;
+        else if (arg == "--out"      && i+1 < argc) cfg.outFile    = argv[++i];
+        else if (arg == "--csv-out"  && i+1 < argc) cfg.csvOutFile = argv[++i];
+        else if (arg == "--verbose")                cfg.verbose    = true;
         else { std::cerr << "Unknown argument: " << arg << "\n"; printHelp(argv[0]); return 1; }
     }
 
@@ -187,6 +191,26 @@ int main(int argc, char* argv[]) {
         hvVals.push_back(hvScore);
         igdVals.push_back(igdScore);
         timeVals.push_back(elapsed);
+
+        if (!cfg.csvOutFile.empty()) {
+            std::ofstream csvf(cfg.csvOutFile, std::ios::app);
+            if (csvf.is_open()) {
+                csvf.seekp(0, std::ios::end);
+                if (csvf.tellp() == 0)
+                    csvf << "algo,problem,dataset,nhidden,popsize,maxfe,run,seed,hv,igd,time_s\n";
+                csvf << cfg.algorithm << ","
+                     << cfg.problem   << ","
+                     << cfg.dataNo    << ","
+                     << cfg.nHidden   << ","
+                     << cfg.N         << ","
+                     << cfg.maxFE     << ","
+                     << (run + 1)     << ","
+                     << runSeed       << ","
+                     << std::fixed << std::setprecision(6) << hvScore << ","
+                     << igdScore      << ","
+                     << std::setprecision(4) << elapsed    << "\n";
+            }
+        }
 
         // Report results
         std::cout << std::fixed << std::setprecision(6);
