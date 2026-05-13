@@ -25,8 +25,8 @@
 // Zero weight = inactive synapse (contributes to sparsity).
 //
 // Topology: fully-connected, no recurrence.
-//   nFeatures input neurons -> nHidden hidden neurons -> nClasses output neurons
-//   D = nFeatures*nHidden + nHidden*nClasses synapses (all excitatory).
+//   (nFeatures+1) input+bias -> nHidden hidden neurons -> 1 output neuron (binary)
+//   D = (nFeatures+1)*nHidden + (nHidden+1)*nOutputs synapses (all excitatory).
 //
 // Input normalization: min-max to [0,1] so RateEncoder receives valid inputs.
 class SparseSNN : public Problem {
@@ -37,6 +37,7 @@ public:
 
     int nFeatures = 0;
     int nClasses  = 0;
+    int nOutputs  = 0;
     int nSamples  = 0;
 
     // Training dataset for evaluateAccuracy(): (normalized_input, 0-indexed label)
@@ -50,7 +51,7 @@ public:
         loadData();
 
         M = 2;
-        D = nFeatures * nHidden + nHidden * nClasses;
+        D = (nFeatures + 1) * nHidden + (nHidden + 1) * nOutputs;
         lower    = Vector::Constant(D, 0.0);
         upper    = Vector::Constant(D, 1.0);
         encoding.assign(D, 1);  // all real
@@ -165,6 +166,7 @@ private:
         std::set<double> catSet(labelRaw.begin(), labelRaw.end());
         std::vector<double> cats(catSet.begin(), catSet.end());
         nClasses = static_cast<int>(cats.size());
+        nOutputs = (nClasses <= 2) ? 1 : nClasses;
 
         std::vector<int> labels(totalSamples);
         for (int i = 0; i < totalSamples; i++)
@@ -177,8 +179,12 @@ private:
 
         trainDataset.clear();
         trainDataset.reserve(trainSize);
-        for (int i = 0; i < trainSize; i++)
-            trainDataset.emplace_back(inputs[i], labels[i]);
+        for (int i = 0; i < trainSize; i++) {
+            auto inp = inputs[i];
+            inp.push_back(1.0);  // bias for hidden layer (always active)
+            inp.push_back(1.0);  // bias for output layer (always active)
+            trainDataset.emplace_back(std::move(inp), labels[i]);
+        }
     }
 
     std::pair<std::unique_ptr<Network>, std::unique_ptr<Simulator>> makeNetSim() {
@@ -192,17 +198,29 @@ private:
 
         for (int i = 0; i < nFeatures; i++)
             n->addInputNeuron(NeuronType::REGULAR_SPIKING);
-        for (int h = 0; h < nHidden; h++)
-            n->addHiddenNeuron(NeuronType::REGULAR_SPIKING);
-        for (int o = 0; o < nClasses; o++)
-            n->addOutputNeuron(NeuronType::REGULAR_SPIKING);
+        int bias_h_id = n->addInputNeuron(NeuronType::REGULAR_SPIKING);  // ID nFeatures
+        int bias_o_id = n->addInputNeuron(NeuronType::REGULAR_SPIKING);  // ID nFeatures+1
 
         for (int h = 0; h < nHidden; h++)
+            n->addHiddenNeuron(NeuronType::REGULAR_SPIKING);
+        for (int o = 0; o < nOutputs; o++)
+            n->addOutputNeuron(NeuronType::REGULAR_SPIKING);
+
+        int firstHidden = nFeatures + 2;
+        int firstOutput = nFeatures + 2 + nHidden;
+
+        // Layer 1: (nFeatures+1) inputs+bias → nHidden hidden
+        for (int h = 0; h < nHidden; h++) {
             for (int i = 0; i < nFeatures; i++)
-                n->addSynapse(i, nFeatures + h, /*excitatory=*/true, /*weight=*/0.0);
-        for (int o = 0; o < nClasses; o++)
+                n->addSynapse(i, firstHidden + h, true, 0.0);
+            n->addSynapse(bias_h_id, firstHidden + h, true, 0.0);
+        }
+        // Layer 2: nHidden hidden + bias → nOutputs output
+        for (int o = 0; o < nOutputs; o++) {
             for (int h = 0; h < nHidden; h++)
-                n->addSynapse(nFeatures + h, nFeatures + nHidden + o, /*excitatory=*/true, /*weight=*/0.0);
+                n->addSynapse(firstHidden + h, firstOutput + o, true, 0.0);
+            n->addSynapse(bias_o_id, firstOutput + o, true, 0.0);
+        }
 
         auto s = std::make_unique<Simulator>(n.get(), cfg);
         s->setEncoder(std::make_unique<RateEncoder>(100.0));
