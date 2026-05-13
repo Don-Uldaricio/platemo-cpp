@@ -176,6 +176,7 @@ Population MOEACKF(Problem& prob, bool verbose = false) {
 
         if (verbose)
             std::cout << "FE=" << prob.FE << " popSize=" << pop.size() << "\n";
+        prob.MaybeLog(pop);
     }
     return pop;
 }

@@ -30,6 +30,8 @@ struct RunConfig {
     bool verbose;
     std::string outFile;
     std::string csvOutFile;
+    std::string convOutFile;
+    int logInterval = 0;
 };
 
 void printHelp(const char* prog) {
@@ -46,6 +48,8 @@ void printHelp(const char* prog) {
               << "  --datapath  <path>             Path to CSV data files (default: data)\n"
               << "  --out       <file>             Save Pareto front to CSV (optional)\n"
               << "  --csv-out   <file>             Append per-run metrics to CSV (optional)\n"
+              << "  --conv-out  <file>             Append per-checkpoint HV/IGD history to CSV (optional)\n"
+              << "  --log-interval <int>           FE interval between convergence snapshots (default: maxFE/10)\n"
               << "  --verbose                      Print per-generation progress\n"
               << "\nProblems:\n"
               << "  SparseNN  : Multi-layer ANN with backprop fine-tuning (baseline)\n"
@@ -93,6 +97,8 @@ int main(int argc, char* argv[]) {
     cfg.verbose     = false;
     cfg.outFile     = "";
     cfg.csvOutFile  = "";
+    cfg.convOutFile = "";
+    cfg.logInterval = 0;
 
     // Parse arguments
     for (int i = 1; i < argc; i++) {
@@ -107,9 +113,11 @@ int main(int argc, char* argv[]) {
         else if (arg == "--runs"     && i+1 < argc) cfg.nRuns     = std::stoi(argv[++i]);
         else if (arg == "--seed"     && i+1 < argc) cfg.seed      = std::stoul(argv[++i]);
         else if (arg == "--datapath" && i+1 < argc) cfg.dataPath  = argv[++i];
-        else if (arg == "--out"      && i+1 < argc) cfg.outFile    = argv[++i];
-        else if (arg == "--csv-out"  && i+1 < argc) cfg.csvOutFile = argv[++i];
-        else if (arg == "--verbose")                cfg.verbose    = true;
+        else if (arg == "--out"          && i+1 < argc) cfg.outFile     = argv[++i];
+        else if (arg == "--csv-out"      && i+1 < argc) cfg.csvOutFile  = argv[++i];
+        else if (arg == "--conv-out"     && i+1 < argc) cfg.convOutFile = argv[++i];
+        else if (arg == "--log-interval" && i+1 < argc) cfg.logInterval = std::stoi(argv[++i]);
+        else if (arg == "--verbose")                     cfg.verbose     = true;
         else { std::cerr << "Unknown argument: " << arg << "\n"; printHelp(argv[0]); return 1; }
     }
 
@@ -167,6 +175,32 @@ int main(int argc, char* argv[]) {
 
         std::cout << "  D=" << prob.D << " (weights), M=2 (objectives)"
                   << ", train samples=" << nSamples << "\n";
+
+        // Setup convergence logging
+        if (!cfg.convOutFile.empty()) {
+            prob.logInterval = (cfg.logInterval > 0) ? cfg.logInterval : cfg.maxFE / 10;
+            prob.nextLogFE   = prob.logInterval;
+            prob.onLog = [&](int fe, const Population& pop) {
+                double hv  = HV(pop, prob.optimum);
+                double igd = IGD(pop, prob.optimum);
+                std::ofstream f(cfg.convOutFile, std::ios::app);
+                if (!f.is_open()) return;
+                f.seekp(0, std::ios::end);
+                if (f.tellp() == 0)
+                    f << "algo,problem,dataset,nhidden,popsize,maxfe,run,seed,fe,hv,igd\n";
+                f << cfg.algorithm << ","
+                  << cfg.problem   << ","
+                  << cfg.dataNo    << ","
+                  << cfg.nHidden   << ","
+                  << cfg.N         << ","
+                  << cfg.maxFE     << ","
+                  << (run + 1)     << ","
+                  << runSeed       << ","
+                  << fe            << ","
+                  << std::fixed << std::setprecision(6) << hv  << ","
+                  << igd           << "\n";
+            };
+        }
 
         auto tStart = std::chrono::steady_clock::now();
 

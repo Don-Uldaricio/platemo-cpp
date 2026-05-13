@@ -1,6 +1,7 @@
 #pragma once
 #include "Solution.hpp"
 #include <chrono>
+#include <functional>
 #include <limits>
 #include <random>
 
@@ -17,6 +18,10 @@ public:
     std::vector<int> encoding;  // 1=real, 2=integer, 3=label, 4=binary, 5=permutation
     Matrix optimum;
     std::chrono::steady_clock::time_point startTime;
+
+    std::function<void(int, const Population&)> onLog;
+    int logInterval = 0;
+    int nextLogFE   = 0;
 
     virtual ~Problem() = default;
 
@@ -70,11 +75,20 @@ public:
         return FE < maxFE;
     }
 
+    void MaybeLog(const Population& pop) {
+        if (logInterval <= 0 || !onLog) return;
+        while (nextLogFE > 0 && FE >= nextLogFE && nextLogFE <= maxFE) {
+            onLog(FE, pop);
+            nextLogFE += logInterval;
+        }
+    }
+
     void init() {
         startTime = std::chrono::steady_clock::now();
         Setting();
         optimum = GetOptimum(10000);
         FE = 0;
+        nextLogFE = logInterval;
     }
 
 protected:

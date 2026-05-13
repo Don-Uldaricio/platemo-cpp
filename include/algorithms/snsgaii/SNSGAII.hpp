@@ -40,6 +40,7 @@ Population SNSGAII(Problem& prob, bool verbose = false) {
 
         if (verbose)
             std::cout << "FE=" << prob.FE << " popSize=" << Population_.size() << "\n";
+        prob.MaybeLog(Population_);
     }
     return Population_;
 }
