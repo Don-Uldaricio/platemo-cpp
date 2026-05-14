@@ -16,8 +16,10 @@ Population SNSGAII(Problem& prob, bool verbose = false) {
     Population_ = pop;
 
     while (prob.NotTerminated(Population_)) {
-        // Tournament selection
-        auto matingIdx = TournamentSelection(2, prob.N, FrontNo, CrowdDis);
+        // Tournament selection — negate CrowdDis so higher diversity is preferred (NSGA-II semantics)
+        std::vector<double> negCrowdDis(CrowdDis.size());
+        for (int i = 0; i < (int)CrowdDis.size(); i++) negCrowdDis[i] = -CrowdDis[i];
+        auto matingIdx = TournamentSelection(2, prob.N, FrontNo, negCrowdDis);
 
         // Build mating pool
         Population matingPool;
