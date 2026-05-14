@@ -4,7 +4,7 @@
 
 #include "core/network.hpp"
 #include "core/simulator.hpp"
-#include "encoding/rateEncoder.hpp"
+#include "encoding/poissonEncoder.hpp"
 
 #include <fstream>
 #include <sstream>
@@ -223,7 +223,7 @@ private:
         }
 
         auto s = std::make_unique<Simulator>(n.get(), cfg);
-        s->setEncoder(std::make_unique<RateEncoder>(100.0));
+        s->setEncoder(std::make_unique<PoissonEncoder>(100.0, true, 5.0));
         return {std::move(n), std::move(s)};
     }
 
