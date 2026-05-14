@@ -14,10 +14,10 @@ ALGOS=(MOEACKF)
 DATASETS=(1)
 NHIDDENS=(20)
 POPSIZE=100
-MAXFE=100000   # quick test default — use 20000-40000 for publication runs
-RUNS=30
-SEED=42
-JOBS=4       # parallel processes — tune to number of physical cores
+MAXFE=5000   # quick test default — use 20000-40000 for publication runs
+RUNS=1
+SEED=100
+JOBS=1       # parallel processes — tune to number of physical cores
 
 mkdir -p "$RUN_DIR" "$TMPDIR"
 rm -f "$TMPDIR"/*.csv
@@ -30,6 +30,7 @@ run_one() {
     local seed=$(( BASE_SEED + run ))
     local out="$TMPDIR/${algo}_ds${ds}_nh${nh}_run${run}.csv"
     local conv_out="$TMPDIR/${algo}_ds${ds}_nh${nh}_run${run}_conv.csv"
+    local front_out="$TMPDIR/${algo}_ds${ds}_nh${nh}_run${run}_front.csv"
 
     OMP_NUM_THREADS=1 "$BIN" \
         --algo     "$algo"     \
@@ -42,7 +43,8 @@ run_one() {
         --seed     "$seed"     \
         --datapath "$DATAPATH" \
         --csv-out  "$out"      \
-        --conv-out "$conv_out"
+        --conv-out "$conv_out" \
+        --out      "$front_out"
 }
 export -f run_one
 export BIN DATAPATH TMPDIR POPSIZE MAXFE BASE_SEED=$SEED
@@ -78,8 +80,16 @@ if [[ -n "$first_conv" ]]; then
     echo "Conv rows written: $(( $(wc -l < "$CONVFILE") - 1 ))"
 fi
 
+# Move Pareto front files out before cleanup
+FRONTSDIR=$RUN_DIR/fronts
+mkdir -p "$FRONTSDIR"
+for f in "$TMPDIR"/*_front.csv; do
+    [[ -f "$f" ]] && mv "$f" "$FRONTSDIR/"
+done
+
 rm -rf "$TMPDIR"
 
 echo ""
 echo "Done. Results in $CSVFILE"
+echo "Pareto fronts in $FRONTSDIR/"
 echo "Rows written: $(( $(wc -l < "$CSVFILE") - 1 ))"
