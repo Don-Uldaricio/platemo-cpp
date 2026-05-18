@@ -25,7 +25,7 @@
 // Zero weight = inactive synapse (contributes to sparsity).
 //
 // Topology: fully-connected, no recurrence.
-//   (nFeatures+1) input+bias -> nHidden hidden neurons -> 1 output neuron (binary)
+//   (nFeatures+1) input+bias -> nHidden hidden neurons -> nClasses output neurons
 //   D = (nFeatures+1)*nHidden + (nHidden+1)*nOutputs synapses (all excitatory).
 //
 // Input normalization: min-max to [0,1] so RateEncoder receives valid inputs.
@@ -166,7 +166,7 @@ private:
         std::set<double> catSet(labelRaw.begin(), labelRaw.end());
         std::vector<double> cats(catSet.begin(), catSet.end());
         nClasses = static_cast<int>(cats.size());
-        nOutputs = (nClasses <= 2) ? 1 : nClasses;
+        nOutputs = nClasses;
 
         std::vector<int> labels(totalSamples);
         for (int i = 0; i < totalSamples; i++)

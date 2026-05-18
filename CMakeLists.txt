@@ -25,8 +25,6 @@ add_library(snn_libs STATIC
     ${SNN_ROOT}/src/encoding/encoder.cpp
     ${SNN_ROOT}/src/encoding/rateEncoder.cpp
     ${SNN_ROOT}/src/encoding/poissonEncoder.cpp
-    ${SNN_ROOT}/src/encoding/rlEncoder.cpp
-    ${SNN_ROOT}/src/decoding/decoder.cpp
     ${SNN_ROOT}/src/decoding/classificationDecoder.cpp
     ${SNN_ROOT}/src/core/simulator.cpp
 )
