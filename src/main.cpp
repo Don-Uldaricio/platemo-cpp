@@ -27,7 +27,9 @@ struct RunConfig {
     int nRuns;
     unsigned seed;
     std::string dataPath;
-    bool verbose;
+    bool   verbose     = false;
+    bool   sanityCheck = false;
+    double wScale      = 1.0;
     std::string outFile;
     std::string csvOutFile;
     std::string convOutFile;
@@ -50,6 +52,8 @@ void printHelp(const char* prog) {
               << "  --csv-out   <file>             Append per-run metrics to CSV (optional)\n"
               << "  --conv-out  <file>             Append per-checkpoint HV/IGD history to CSV (optional)\n"
               << "  --log-interval <int>           FE interval between convergence snapshots (default: maxFE/10)\n"
+              << "  --wscale    <float>            Weight scale factor applied at evaluation (default: 1.0)\n"
+              << "  --sanity-check                 Evaluate extreme weight configs and exit (no GA run)\n"
               << "  --verbose                      Print per-generation progress\n"
               << "\nProblems:\n"
               << "  SparseNN  : Multi-layer ANN with backprop fine-tuning (baseline)\n"
@@ -116,8 +120,10 @@ int main(int argc, char* argv[]) {
         else if (arg == "--out"          && i+1 < argc) cfg.outFile     = argv[++i];
         else if (arg == "--csv-out"      && i+1 < argc) cfg.csvOutFile  = argv[++i];
         else if (arg == "--conv-out"     && i+1 < argc) cfg.convOutFile = argv[++i];
-        else if (arg == "--log-interval" && i+1 < argc) cfg.logInterval = std::stoi(argv[++i]);
-        else if (arg == "--verbose")                     cfg.verbose     = true;
+        else if (arg == "--log-interval" && i+1 < argc) cfg.logInterval  = std::stoi(argv[++i]);
+        else if (arg == "--wscale"       && i+1 < argc) cfg.wScale       = std::stod(argv[++i]);
+        else if (arg == "--sanity-check")                cfg.sanityCheck  = true;
+        else if (arg == "--verbose")                     cfg.verbose      = true;
         else { std::cerr << "Unknown argument: " << arg << "\n"; printHelp(argv[0]); return 1; }
     }
 
@@ -148,9 +154,10 @@ int main(int argc, char* argv[]) {
         std::unique_ptr<Problem> probPtr;
         if (cfg.problem == "SparseSNN") {
             auto p = std::make_unique<SparseSNN>(cfg.dataNo, cfg.nHidden, cfg.dataPath);
-            p->N     = cfg.N;
-            p->maxFE = cfg.maxFE;
-            probPtr  = std::move(p);
+            p->N      = cfg.N;
+            p->maxFE  = cfg.maxFE;
+            p->wScale = cfg.wScale;
+            probPtr   = std::move(p);
         } else if (cfg.problem == "SparseNN") {
             auto p = std::make_unique<SparseNN>(cfg.dataNo, cfg.nHidden, cfg.dataPath);
             p->N     = cfg.N;
@@ -167,6 +174,15 @@ int main(int argc, char* argv[]) {
         } catch (const std::exception& e) {
             std::cerr << "Error: " << e.what() << "\n";
             return 1;
+        }
+
+        if (cfg.sanityCheck) {
+            if (cfg.problem != "SparseSNN") {
+                std::cerr << "--sanity-check only supported for SparseSNN\n";
+                return 1;
+            }
+            static_cast<SparseSNN&>(prob).runSanityCheck();
+            return 0;
         }
 
         int nSamples = (cfg.problem == "SparseSNN")

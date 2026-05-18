@@ -18,9 +18,26 @@ MAXFE=5000   # quick test default — use 20000-40000 for publication runs
 RUNS=1
 SEED=100
 JOBS=1       # parallel processes — tune to number of physical cores
+WSCALE=20    # weight scale factor: pesos [0,1] × WSCALE antes de setWeights()
+             # con el modelo Izhikevich se necesita WSCALE ≥ 10 para que las neuronas disparen
+SANITY_CHECK=false  # true: corre diagnóstico de configuraciones extremas antes de los jobs
 
 mkdir -p "$RUN_DIR" "$TMPDIR"
 rm -f "$TMPDIR"/*.csv
+
+# Sanity check opcional: verifica que los pesos afectan la red antes de lanzar jobs.
+if [[ "$SANITY_CHECK" == "true" ]]; then
+    echo "=== Pre-flight sanity check (dataset=${DATASETS[0]}, nhidden=${NHIDDENS[0]}, wscale=$WSCALE) ==="
+    OMP_NUM_THREADS=1 "$BIN" \
+        --problem  SparseSNN \
+        --dataset  "${DATASETS[0]}" \
+        --nhidden  "${NHIDDENS[0]}" \
+        --datapath "$DATAPATH" \
+        --wscale   "$WSCALE" \
+        --sanity-check
+    echo "Si 'all-zeros' y 'random-dense (×ws)' tienen la misma accuracy → aumentar WSCALE."
+    echo ""
+fi
 
 # Each invocation handles one (algo, dataset, nhidden, run) combination.
 # OMP_NUM_THREADS=1 disables the inner OpenMP pool since parallelism is
@@ -42,12 +59,13 @@ run_one() {
         --runs     1           \
         --seed     "$seed"     \
         --datapath "$DATAPATH" \
+        --wscale   "$WSCALE"   \
         --csv-out  "$out"      \
         --conv-out "$conv_out" \
         --out      "$front_out"
 }
 export -f run_one
-export BIN DATAPATH TMPDIR POPSIZE MAXFE BASE_SEED=$SEED
+export BIN DATAPATH TMPDIR POPSIZE MAXFE WSCALE BASE_SEED=$SEED
 
 total=$(( ${#ALGOS[@]} * ${#DATASETS[@]} * ${#NHIDDENS[@]} * RUNS ))
 echo "Output directory: $RUN_DIR"

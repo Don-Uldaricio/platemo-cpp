@@ -7,6 +7,8 @@
 #include "encoding/poissonEncoder.hpp"
 
 #include <fstream>
+#include <iomanip>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <stdexcept>
@@ -35,10 +37,11 @@ public:
     int nHidden  = 20;
     std::string dataPath;
 
-    int nFeatures = 0;
-    int nClasses  = 0;
-    int nOutputs  = 0;
-    int nSamples  = 0;
+    int    nFeatures = 0;
+    int    nClasses  = 0;
+    int    nOutputs  = 0;
+    int    nSamples  = 0;
+    double wScale    = 1.0;  // multiplicador sobre pesos antes de setWeights(); sparsity se mide sin escala
 
     // Training dataset for evaluateAccuracy(): (normalized_input, 0-indexed label)
     std::vector<std::pair<std::vector<double>, int>> trainDataset;
@@ -97,10 +100,12 @@ public:
             int tid = omp_get_thread_num();
 
             std::vector<double> weights(D);
-            for (int j = 0; j < D; j++) weights[j] = dec(i, j);
-
             int nzCount = 0;
-            for (double w : weights) if (w > 0.0) nzCount++;
+            for (int j = 0; j < D; j++) {
+                double raw = dec(i, j);
+                if (raw > 0.0) nzCount++;
+                weights[j] = raw * wScale;
+            }
             obj(i, 0) = static_cast<double>(nzCount) / D;
 
             sim_pool[tid]->setWeights(weights);
@@ -112,6 +117,66 @@ public:
 
     Matrix GetOptimum(int /*n*/) override {
         return Matrix::Ones(1, 2);  // ideal: (0 sparsity, 0 error) — unreachable in practice
+    }
+
+    // Evalúa configuraciones extremas de pesos y muestra accuracy + spikes por salida.
+    // Útil para verificar que los pesos realmente afectan el comportamiento de la red.
+    // Debe llamarse después de Setting() (init()).
+    void runSanityCheck() {
+        using namespace std;
+        auto& sim = *sim_pool[0];
+
+        // genera vector de pesos aleatorio denso
+        auto makeRandom = [&](double density) {
+            vector<double> w(D);
+            for (int j = 0; j < D; j++)
+                w[j] = (rng::uniform(0.0, 1.0) < density) ? rng::uniform(0.0, 1.0) : 0.0;
+            return w;
+        };
+
+        // aplica escala a un vector de pesos
+        auto scale = [&](vector<double> w, double s) {
+            for (double& x : w) x *= s;
+            return w;
+        };
+
+        struct Config { string name; vector<double> weights; };
+        vector<Config> configs;
+        configs.push_back({"all-zeros",              vector<double>(D, 0.0)});
+        configs.push_back({"all-ones (×1)",          vector<double>(D, 1.0)});
+        if (wScale != 1.0)
+            configs.push_back({"all-ones (×wScale)", vector<double>(D, wScale)});
+        configs.push_back({"random-dense (×1)",      makeRandom(1.0)});
+        if (wScale != 1.0)
+            configs.push_back({"random-dense (×ws)", scale(makeRandom(1.0), wScale)});
+        configs.push_back({"random-sparse25 (×1)",   makeRandom(0.25)});
+        if (wScale != 1.0)
+            configs.push_back({"random-sp25 (×ws)",  scale(makeRandom(0.25), wScale)});
+
+        cout << "\n=== Sanity Check (D=" << D << ", wScale=" << wScale
+             << ", trainSamples=" << trainDataset.size() << ") ===\n";
+        cout << left << setw(22) << "Config"
+             << setw(10) << "Accuracy"
+             << "  Output spikes (first sample) [per class]\n";
+        cout << string(60, '-') << "\n";
+
+        for (auto& cfg : configs) {
+            sim.setWeights(cfg.weights);
+
+            double acc = sim.evaluateAccuracy(trainDataset);
+
+            // spike diagnostic on first sample
+            auto result = sim.simulateEncoded(trainDataset[0].first);
+            cout << left << setw(22) << cfg.name
+                 << setw(10) << fixed << setprecision(4) << acc
+                 << "  [";
+            for (size_t k = 0; k < result.output_spike_times.size(); k++) {
+                if (k) cout << ", ";
+                cout << result.output_spike_times[k].size();
+            }
+            cout << "]  total=" << (int)result.total_spikes << "\n";
+        }
+        cout << "========================================\n\n";
     }
 
 private:
