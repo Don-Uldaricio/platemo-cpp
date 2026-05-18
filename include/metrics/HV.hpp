@@ -107,8 +107,13 @@ inline double computeHV(std::vector<std::vector<double>> PopObj_,
 
 } // namespace hv_detail
 
-// Hypervolume indicator
-// Returns 0 if no feasible solutions, nan if dimension mismatch
+// Calcula el indicador de Hipervolumen (HV) del frente de Pareto.
+// El HV mide el volumen del espacio objetivo dominado por el frente y acotado por un punto de referencia.
+// Mayor HV = mejor frente de Pareto.
+// pop: población de la que se extrae el frente (solo soluciones factibles no-dominadas).
+// optimum: Matrix de referencia usada para normalizar los objetivos a [0, 1.1].
+// Para M < 4 usa el algoritmo exacto de recursive slicing; para M >= 4 usa Monte Carlo con 1M muestras.
+// Retorna: HV como double (0 si no hay soluciones factibles, NaN si hay inconsistencia de dimensiones).
 inline double HV(const Population& pop, const Matrix& optimum) {
     Population best = getBest(pop);
     if (best.empty()) return 0.0;

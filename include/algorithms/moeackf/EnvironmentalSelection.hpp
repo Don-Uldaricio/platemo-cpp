@@ -14,8 +14,22 @@ struct EnvSelResult {
     double sRatio;
 };
 
-// Environmental selection for MOEA-CKF (SPEA2-like truncation).
-// len: size of original population (before offspring), num: number of offspring1
+// Selección ambiental de MOEA-CKF (truncación tipo SPEA2).
+// Reduce la población combinada a N individuos manteniendo diversidad en el frente de Pareto.
+// Pasos:
+//   1. Elimina duplicados por objetivo (o por decisión si todos los objetivos son iguales).
+//   2. Ordena por frente no-dominado.
+//   3. Del último frente, elimina iterativamente el individuo con menor distancia al vecino más
+//      cercano (el más "hacinado"), hasta ajustar al tamaño N.
+//   4. Calcula sRatio: proporción de offspring1 vs offspring2 que sobrevivieron,
+//      para retroalimentar la proporción rho del algoritmo principal.
+// pop: población combinada (padres + offspring1 + offspring2).
+// Dec: Matrix con las decisiones brutas (sin enmascarar), mismo orden que pop.
+// Mask: MatrixB con las máscaras de esparcidad, mismo orden que pop.
+// N: tamaño objetivo de la siguiente generación.
+// len: índice donde comienza offspring1 dentro de pop (= tamaño de la población padre).
+// num: número de individuos de offspring1.
+// Retorna: EnvSelResult con la población seleccionada, sus Dec, Mask y el sRatio calculado.
 EnvSelResult EnvironmentalSelection_CKF(
     const Population& pop, const Matrix& Dec, const MatrixB& Mask,
     int N, int len, int num)

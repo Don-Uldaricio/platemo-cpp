@@ -4,8 +4,13 @@
 #include <cmath>
 #include <algorithm>
 
-// Polynomial mutation (ported from Pymoo via PlatEMO).
-// Mutates each element independently.
+// Mutación polinomial estándar (portada de Pymoo/PlatEMO).
+// Perturba cada gen independientemente con una distribución polinomial sesgada hacia los bounds.
+// genome: vector de genes a mutar.
+// lb: bounds inferiores por gen.
+// ub: bounds superiores por gen.
+// eta: índice de distribución; mayor eta = perturbaciones más pequeñas (default típico: 20).
+// Retorna: nuevo vector de genes mutados, garantizados dentro de [lb, ub].
 inline std::vector<double> polyMutateCore(
     const std::vector<double>& genome,
     const std::vector<double>& lb,
@@ -42,7 +47,12 @@ inline std::vector<double> polyMutateCore(
     return result;
 }
 
-// Scalar version
+// Versión escalar de la mutación polinomial (muta un único gen).
+// gene: valor actual del gen.
+// lb: bound inferior.
+// ub: bound superior.
+// eta: índice de distribución.
+// Retorna: nuevo valor del gen dentro de [lb, ub].
 inline double polyMutateCoreScalar(double gene, double lb, double ub, double eta) {
     double range = ub - lb;
     if (range < 1e-10) return gene;

@@ -25,6 +25,9 @@ public:
              const std::string& dataPath_ = "data")
         : dataNo(dataNo_), nHidden(nHidden_), dataPath(dataPath_) {}
 
+    // Carga los datos y define los parámetros del problema.
+    // D = (nFeatures+1)*nHidden + (nHidden+1)*nOutputs (total de pesos incluyendo biases).
+    // Todos los pesos en [-1, 1].
     void Setting() override {
         loadData();
         M = 2;
@@ -34,9 +37,11 @@ public:
         encoding.assign(D, 1);  // All real
     }
 
+    // Inicialización esparcida: cada peso es uniform(-1,1) * Bernoulli(0.5),
+    // produciendo ~50% de pesos en cero desde el inicio.
+    // n: número de soluciones a generar (-1 usa prob.N).
     Population Initialization(int n = -1) override {
         if (n < 0) n = N;
-        // Sparse initialization: random values multiplied by Bernoulli(0.5)
         Matrix PopDec(n, D);
         for (int i = 0; i < n; i++)
             for (int j = 0; j < D; j++) {
@@ -47,7 +52,10 @@ public:
         return Evaluation(PopDec);
     }
 
-    // Fine-tune: 1 epoch of backprop per solution
+    // Fine-tuning: aplica 1 época de backpropagation a cada solución antes de evaluarla.
+    // Esto mejora el error de clasificación sin cambiar el patrón de esparcidad (los ceros se mantienen).
+    // dec: Matrix n x D con los pesos propuestos por el algoritmo evolutivo.
+    // Retorna: Matrix n x D con los pesos ajustados por gradiente.
     Matrix CalDec(const Matrix& dec) override {
         int n = dec.rows();
         Matrix result = dec;
@@ -59,6 +67,11 @@ public:
         return result;
     }
 
+    // Calcula los dos objetivos para cada solución:
+    //   f1 (obj 0) = fracción de pesos no-cero (complejidad de la red, en [0,1]).
+    //   f2 (obj 1) = tasa de error de clasificación sobre el training set (en [0,1]).
+    // dec: Matrix n x D con los pesos ya fine-tuneados.
+    // Retorna: Matrix n x 2 con [complejidad, error] por fila.
     Matrix CalObj(const Matrix& dec) override {
         int n = dec.rows();
         Matrix obj(n, 2);
@@ -102,6 +115,11 @@ public:
     }
 
 private:
+    // Lee el CSV del dataset, normaliza features con z-score, construye etiquetas,
+    // y divide en 80% train / 20% test.
+    // Formato CSV: cada fila es una muestra, última columna es la etiqueta de clase.
+    // Para 2 clases: nOutputs=1, salida binaria {0,1}.
+    // Para >2 clases: nOutputs=nClases, salida one-hot.
     void loadData() {
         std::string fname = dataPath + "/Dataset_NN_" + std::to_string(dataNo) + ".csv";
         std::ifstream file(fname);
@@ -194,6 +212,10 @@ private:
         }
     }
 
+    // Convierte un vector plano de D pesos en las matrices de la red.
+    // row: RowVector de tamaño D con todos los pesos en el orden del encoding.
+    // Retorna: par (W1, W2) donde W1 es (nFeatures+1) x nHidden y W2 es (nHidden+1) x nOutputs.
+    // La fila 0 de W1 y W2 corresponde al bias de cada capa.
     std::pair<Matrix, Matrix> decodeWeights(const Eigen::RowVectorXd& row) const {
         // total size = (nFeatures+1)*nHidden + (nHidden+1)*nOutputs
         Matrix W1 = Matrix(nFeatures+1, nHidden);
@@ -208,6 +230,10 @@ private:
         return {W1, W2};
     }
 
+    // Operación inversa a decodeWeights: aplana W1 y W2 en un vector plano de tamaño D.
+    // W1: Matrix (nFeatures+1) x nHidden.
+    // W2: Matrix (nHidden+1) x nOutputs.
+    // Retorna: RowVector de tamaño D con los pesos en el mismo orden que decodeWeights.
     Eigen::RowVectorXd encodeWeights(const Matrix& W1, const Matrix& W2) const {
         Eigen::RowVectorXd row(D);
         int idx = 0;
@@ -220,7 +246,13 @@ private:
         return row;
     }
 
-    // Forward pass: tanh hidden, sigmoid output
+    // Forward pass de la red neuronal.
+    // Capa oculta: activación tanh.  Capa de salida: activación sigmoid.
+    // Agrega automáticamente la columna de bias (valor 1) a la entrada y a la capa oculta.
+    // X: Matrix nSamples x nFeatures con las entradas (sin bias).
+    // W1: Matrix (nFeatures+1) x nHidden con los pesos de la primera capa (fila 0 = bias).
+    // W2: Matrix (nHidden+1) x nOutputs con los pesos de la segunda capa (fila 0 = bias).
+    // Retorna: par (Z, Y) donde Z es la salida (nSamples x nOutputs) e Y es la capa oculta (nSamples x nHidden).
     std::pair<Matrix, Matrix> predict(const Matrix& X, const Matrix& W1, const Matrix& W2) const {
         int n = X.rows();
         // Add bias column to X
@@ -244,7 +276,12 @@ private:
         return {Z, Y};
     }
 
-    // 1 epoch backprop gradient descent
+    // Aplica nEpoch épocas de gradient descent con backpropagation sobre el training set completo.
+    // Usa batch gradient descent (un único update por época).
+    // Regla de actualización: W -= dL/dW / n (sin momentum ni learning rate especial, lr=1/n).
+    // W1: pesos de la primera capa (modificados in-place).
+    // W2: pesos de la segunda capa (modificados in-place).
+    // nEpoch: número de épocas de entrenamiento.
     void trainStep(Matrix& W1, Matrix& W2, int nEpoch) const {
         int n = TrainIn.rows();
         Matrix Xb(n, nFeatures+1);

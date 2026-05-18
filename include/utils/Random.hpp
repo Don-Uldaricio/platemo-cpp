@@ -7,24 +7,30 @@
 
 namespace rng {
 
+// Retorna referencia al generador Mersenne Twister global (singleton estático).
 inline std::mt19937& engine() {
     static std::mt19937 e(std::random_device{}());
     return e;
 }
 
+// Fija la semilla del generador global para reproducibilidad.
+// s: semilla entera sin signo.
 inline void seed(uint32_t s) { engine().seed(s); }
 
+// Genera un número real uniforme en [lo, hi].
+// lo: límite inferior (default 0.0), hi: límite superior (default 1.0).
 inline double uniform(double lo = 0.0, double hi = 1.0) {
     std::uniform_real_distribution<double> d(lo, hi);
     return d(engine());
 }
 
+// Genera un entero uniforme en [lo, hi] (ambos inclusive).
 inline int randint(int lo, int hi) {
     std::uniform_int_distribution<int> d(lo, hi);
     return d(engine());
 }
 
-// N x D matrix of uniform random values in [lo, hi]
+// Genera una matriz N x D de reales uniformes en [lo, hi].
 inline Eigen::MatrixXd rand(int N, int D, double lo = 0.0, double hi = 1.0) {
     Eigen::MatrixXd M(N, D);
     std::uniform_real_distribution<double> dist(lo, hi);
@@ -34,7 +40,8 @@ inline Eigen::MatrixXd rand(int N, int D, double lo = 0.0, double hi = 1.0) {
     return M;
 }
 
-// N x D matrix: each column j uniform in [lower(j), upper(j)]
+// Genera una matriz N x D donde cada columna j tiene valores uniformes en [lower(j), upper(j)].
+// Útil para inicializar poblaciones respetando los bounds de cada variable.
 inline Eigen::MatrixXd unifrndBounded(int N, const Eigen::VectorXd& lower, const Eigen::VectorXd& upper) {
     int D = lower.size();
     Eigen::MatrixXd M(N, D);
@@ -46,7 +53,7 @@ inline Eigen::MatrixXd unifrndBounded(int N, const Eigen::VectorXd& lower, const
     return M;
 }
 
-// N x D matrix of random integers in [lo, hi]
+// Genera una matriz N x D de enteros uniformes en [lo, hi].
 inline Eigen::MatrixXi randi(int lo, int hi, int N, int D) {
     Eigen::MatrixXi M(N, D);
     std::uniform_int_distribution<int> dist(lo, hi);
@@ -56,7 +63,8 @@ inline Eigen::MatrixXi randi(int lo, int hi, int N, int D) {
     return M;
 }
 
-// Random permutation of k elements from 0..n-1
+// Retorna una permutación aleatoria de k elementos distintos tomados de {0, 1, ..., n-1}.
+// k: cuántos elementos tomar (default = n, permutación completa).
 inline std::vector<int> randperm(int n, int k = -1) {
     if (k < 0) k = n;
     std::vector<int> v(n);

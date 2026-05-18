@@ -6,8 +6,12 @@
 #include <numeric>
 #include "Random.hpp"
 
-// Simple Lloyd's k-means for k=2, 1D data.
-// Returns cluster labels 0 or 1 for each data point.
+// K-means de Lloyd simplificado para k=2 sobre datos 1D.
+// Usado en SparsityAnalysis para separar variables en dos grupos (significativas y no-significativas).
+// data: vector de N valores a clusterizar.
+// maxIter: número máximo de iteraciones de Lloyd (default 100).
+// Retorna: vector de N enteros (0 o 1) con la etiqueta de cluster de cada punto.
+//          Si todos los puntos son iguales o un cluster queda vacío, divide por la mediana.
 inline std::vector<int> kmeans2(const std::vector<double>& data, int maxIter = 100) {
     int N = data.size();
     if (N == 0) return {};

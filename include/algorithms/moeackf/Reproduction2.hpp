@@ -88,7 +88,17 @@ struct Reproduction2Result {
     MatrixB OffMask;
 };
 
-// Dual-grouping reproduction for MOEA-CKF
+// Reproducción por grupos duales (Dual Grouping) de MOEA-CKF.
+// Genera offspring para el Grupo 2 aplicando operadores por separado a cada grupo de variables.
+// Para las máscaras: aplica BinaryCrossover + BinaryMutation independientemente en el grupo SV y el NSV.
+// Para los valores reales: para cada offspring, separa las posiciones activas (mask=1) de las inactivas (mask=0)
+//   y aplica SBXhalf + PM de forma independiente en cada grupo.
+// ParentDec: Matrix 2N x D con las decisiones de los 2N padres emparejados (primeras N = Parent1, siguientes N = Parent2).
+// ParentMask: MatrixB 2N x D con las máscaras de los padres, mismo orden.
+// NSV: vector bool D indicando variables no-significativas.
+// SV: vector bool D indicando variables significativas.
+// isReal: true si el problema es de variables reales.
+// Retorna: Reproduction2Result con OffDec (decisiones N x D) y OffMask (máscaras N x D).
 Reproduction2Result Reproduction2(
     Problem& prob,
     const Matrix& ParentDec, const MatrixB& ParentMask,

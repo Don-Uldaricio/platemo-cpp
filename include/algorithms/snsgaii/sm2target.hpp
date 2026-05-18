@@ -5,10 +5,15 @@
 #include <cmath>
 #include <algorithm>
 
-// Mutate population to achieve target sparsity levels.
-// Pop: N x D real matrix (zeros are sparse positions).
-// lb, ub: bounds vectors (size D).
-// newSparsities: target sparsity for each individual (size N), in [0,1].
+// Ajusta la esparcidad de cada individuo de la población a un nivel objetivo.
+// Para cada individuo, si necesita más ceros apaga pesos no-cero al azar;
+// si necesita más no-ceros, asigna valores aleatorios en bounds a posiciones cero.
+// Pop: Matrix N x D con los pesos actuales (cero = inactivo).
+// lb: Vector D con bounds inferiores por variable.
+// ub: Vector D con bounds superiores por variable.
+// newSparsities: vector de N valores en [0,1] con la esparcidad objetivo por individuo
+//               (fracción de ceros deseada).
+// Retorna: Matrix N x D con los pesos ajustados al nivel de esparcidad objetivo.
 inline Matrix sm2target(const Matrix& Pop,
                         const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
                         const std::vector<double>& newSparsities)
@@ -62,7 +67,8 @@ inline Matrix sm2target(const Matrix& Pop,
     return newPop;
 }
 
-// Scalar target version (same sparsity for all rows)
+// Overload con esparcidad objetivo uniforme para todos los individuos.
+// targetSparsity: fracción de ceros deseada (mismo valor para todas las filas).
 inline Matrix sm2target(const Matrix& Pop,
                         const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
                         double targetSparsity)

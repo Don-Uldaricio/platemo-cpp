@@ -6,7 +6,10 @@
 #include <map>
 #include <limits>
 
-// Unique rows of M; returns unique matrix and index vector loc such that M.row(i) == unique.row(loc[i])
+// Encuentra las filas únicas de una matriz (equivalente a unique(...,'rows') de MATLAB).
+// M: Matrix N x D de entrada.
+// Retorna: par (matriz de filas únicas ordenadas, vector loc) donde loc[i] es el índice
+//          de la fila única a la que corresponde la fila i original.
 inline std::pair<Matrix, std::vector<int>> uniqueRows(const Matrix& M) {
     int N = M.rows(), D = M.cols();
     std::vector<std::vector<double>> rows(N, std::vector<double>(D));
@@ -51,8 +54,12 @@ inline std::pair<Matrix, std::vector<int>> uniqueRows(const Matrix& M) {
     return {uniqM, loc};
 }
 
-// ENS-SS non-dominated sorting (efficient for M<3 or N<500)
-// Returns (frontNos, maxFront) where frontNos[i] is 1-indexed front number (inf if not sorted)
+// Ordenamiento no-dominado ENS-SS (Efficient Non-dominated Sorting with Sequential Search).
+// Eficiente para M < 3 o N < 500. Asigna número de frente a cada solución.
+// PopObj: Matrix N x M con los objetivos de cada solución.
+// nSort: mínimo de soluciones a ordenar (parar al llegar a este número).
+// Retorna: par (frontNos, maxFront) donde frontNos[i] es el número de frente 1-indexado
+//          de la solución i (inf si no fue procesada), y maxFront es el mayor frente asignado.
 inline std::pair<std::vector<double>, int> ENS_SS(const Matrix& PopObj, int nSort) {
     auto [uObj, Loc] = uniqueRows(PopObj);
     int N = uObj.rows(), M = uObj.cols();
@@ -99,14 +106,20 @@ inline std::pair<std::vector<double>, int> ENS_SS(const Matrix& PopObj, int nSor
     return {result, MaxFNo};
 }
 
-// Non-dominated sorting (unconstrained)
-// nSort: number of solutions to sort at least (use INT_MAX for all)
+// Ordenamiento no-dominado sin restricciones. Wrapper sobre ENS_SS.
+// PopObj: Matrix N x M de objetivos.
+// nSort: mínimo de soluciones a ordenar (INT_MAX para ordenar todas).
+// Retorna: par (frontNos, maxFront).
 inline std::pair<std::vector<double>, int> NDSort(const Matrix& PopObj, int nSort = INT_MAX) {
     return ENS_SS(PopObj, nSort);
 }
 
-// Non-dominated sorting with constrained domination
-// Infeasible solutions (any constraint > 0) are penalized
+// Ordenamiento no-dominado con dominación restringida (constraint domination).
+// Las soluciones infactibles (cualquier restricción > 0) reciben penalización en objetivos.
+// PopObj: Matrix N x M de objetivos.
+// PopCon: Matrix N x C de restricciones (valores > 0 indican violación).
+// nSort: mínimo de soluciones a ordenar.
+// Retorna: par (frontNos, maxFront).
 inline std::pair<std::vector<double>, int> NDSort(const Matrix& PopObj, const Matrix& PopCon, int nSort = INT_MAX) {
     int N = PopObj.rows(), M = PopObj.cols();
     Matrix AugObj = PopObj;
@@ -132,7 +145,11 @@ inline std::pair<std::vector<double>, int> NDSort(const Matrix& PopObj, const Ma
     return ENS_SS(AugObj, nSort);
 }
 
-// Get best (feasible non-dominated) solutions from population
+// Retorna las soluciones factibles del frente 1 (frente de Pareto) de la población.
+// Si no hay soluciones factibles, retorna un vector vacío.
+// Para problemas de un solo objetivo, retorna la solución con menor objetivo.
+// pop: población completa.
+// Retorna: Population con las soluciones no-dominadas factibles.
 inline Population getBest(const Population& pop) {
     if (pop.empty()) return {};
 

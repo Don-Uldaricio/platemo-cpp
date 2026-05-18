@@ -47,6 +47,8 @@ public:
               const std::string& dataPath_ = "data")
         : dataNo(dataNo_), nHidden(nHidden_), dataPath(dataPath_) {}
 
+    // Carga los datos, define M=2, D=total pesos, bounds [0,1], y construye el pool de simuladores.
+    // Los pesos en [0,1] representan la fuerza sináptica (0 = sinapsis inactiva).
     void Setting() override {
         loadData();
 
@@ -59,9 +61,10 @@ public:
         buildPool();
     }
 
+    // Inicialización esparcida: cada peso es uniform(0,1) * Bernoulli(0.5) → ~50% ceros.
+    // n: número de soluciones a generar (-1 usa prob.N).
     Population Initialization(int n = -1) override {
         if (n < 0) n = N;
-        // Sparse init: Bernoulli(0.5) mask over uniform [0,1] weights
         Matrix PopDec(n, D);
         for (int i = 0; i < n; i++)
             for (int j = 0; j < D; j++)
@@ -69,7 +72,9 @@ public:
         return Evaluation(PopDec);
     }
 
-    // No gradient step — clamp only
+    // Sin fine-tuning (la SNN no tiene gradiente analítico): solo clampea a [0,1].
+    // dec: Matrix n x D con las decisiones propuestas.
+    // Retorna: Matrix n x D clampeada a [0,1].
     Matrix CalDec(const Matrix& dec) override {
         Matrix d = dec;
         for (int j = 0; j < D; j++)
@@ -77,6 +82,12 @@ public:
         return d;
     }
 
+    // Calcula los dos objetivos para cada solución simulando la SNN en paralelo con OpenMP.
+    //   f1 (obj 0) = fracción de pesos activos (> 0) [complejidad].
+    //   f2 (obj 1) = 1 - accuracy sobre el training set [error de clasificación].
+    // Cada thread usa su propio Simulator del pool para evitar condiciones de carrera.
+    // dec: Matrix n x D con los pesos a evaluar.
+    // Retorna: Matrix n x 2 con [complejidad, error] por fila.
     Matrix CalObj(const Matrix& dec) override {
         int n = dec.rows();
         Matrix obj(n, 2);
@@ -108,6 +119,10 @@ private:
     std::vector<std::unique_ptr<Network>>   net_pool;
     std::vector<std::unique_ptr<Simulator>> sim_pool;
 
+    // Lee el CSV del dataset, normaliza con min-max a [0,1] (requerido por PoissonEncoder),
+    // construye etiquetas 0-indexadas, divide 80% train / 20% test,
+    // y agrega dos valores de bias (1.0) al final de cada vector de entrada
+    // (uno para la capa oculta y otro para la de salida).
     void loadData() {
         static const char* filenames[] = {
             "Dataset_NN_1.csv",
@@ -187,6 +202,13 @@ private:
         }
     }
 
+    // Construye un par (Network, Simulator) con la topología de la SNN.
+    // Topología: nFeatures neuronas de entrada + 2 bias (uno para capa oculta, otro para salida)
+    //            → nHidden neuronas ocultas → nOutputs neuronas de salida.
+    // Todas las sinapsis son excitatorias con peso inicial 0.0 (se asignan con setWeights()).
+    // Configuración de simulación: dt=1ms, encoding_duration=50ms, evaluation_duration=100ms.
+    // Encoder: PoissonEncoder con max 100 Hz.
+    // Retorna: par (Network*, Simulator*) envueltos en unique_ptr.
     std::pair<std::unique_ptr<Network>, std::unique_ptr<Simulator>> makeNetSim() {
         SimulationConfig cfg;
         cfg.dt                  = 1.0;
@@ -227,6 +249,9 @@ private:
         return {std::move(n), std::move(s)};
     }
 
+    // Crea un Network+Simulator independiente por cada thread OpenMP disponible.
+    // Necesario porque Simulator/Network no son thread-safe: cada thread debe tener su propia instancia.
+    // Se llama una sola vez en Setting() antes de cualquier evaluación.
     void buildPool() {
         int nThreads = omp_get_max_threads();
         net_pool.resize(nThreads);

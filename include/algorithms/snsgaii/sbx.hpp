@@ -4,10 +4,14 @@
 #include <cmath>
 #include <algorithm>
 
-// Simulated Binary Crossover (SBX).
-// Parent: 2N x D (first N = parent1, next N = parent2).
-// Returns 2N x D offspring (first N = child1, next N = child2).
-// lb, ub: lower/upper bounds per gene (1 x D or matching columns).
+// Simulated Binary Crossover (SBX): operador de cruce para variables reales.
+// Genera dos hijos interpolando entre dos padres con una distribución beta controlada por disC.
+// Parent: Matrix 2N x D donde las primeras N filas son Parent1 y las siguientes N son Parent2.
+// lb: Vector D con los bounds inferiores por variable.
+// ub: Vector D con los bounds superiores por variable.
+// proC: probabilidad de que ocurra crossover por individuo (default 1.0 = siempre).
+// disC: índice de distribución SBX; mayor valor = hijos más cercanos a los padres (default 20).
+// Retorna: Matrix 2N x D con los dos hijos por par (primeras N = Child1, siguientes N = Child2).
 inline Matrix sbx(const Matrix& Parent,
                   const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
                   double proC = 1.0, double disC = 20.0)
@@ -62,7 +66,7 @@ inline Matrix sbx(const Matrix& Parent,
     return Offspring;
 }
 
-// Overload accepting per-column bounds vectors
+// Overload de sbx con bounds como std::vector en lugar de Eigen::VectorXd.
 inline Matrix sbx(const Matrix& Parent,
                   const std::vector<double>& lb, const std::vector<double>& ub,
                   double proC = 1.0, double disC = 20.0)

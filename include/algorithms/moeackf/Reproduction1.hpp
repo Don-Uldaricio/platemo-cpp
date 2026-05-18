@@ -11,7 +11,11 @@
 
 namespace r1detail {
 
-// SBX half crossover: 2N x D input, N x D output
+// SBX "half": produce N hijos (solo Child1) a partir de 2N padres emparejados.
+// Parent: Matrix 2N x D (primeras N filas = Parent1, siguientes N = Parent2).
+// proC: probabilidad de crossover por individuo.
+// disC: índice de distribución SBX.
+// Retorna: Matrix N x D con solo los primeros hijos.
 inline Matrix GAhalfCross(const Matrix& Parent, double proC = 1.0, double disC = 20.0) {
     int half = Parent.rows() / 2;
     Matrix P1 = Parent.topRows(half);
@@ -43,9 +47,13 @@ inline Matrix GAhalfCross(const Matrix& Parent, double proC = 1.0, double disC =
     return (P1 + P2) / 2.0 + beta.cwiseProduct(P1 - P2) / 2.0;
 }
 
-// Apply polynomial mutation to a sub-matrix Off (N x K).
-// colMask: boolean size prob.D, true = column included in Off.
-// colMask must have exactly Off.cols() true entries.
+// Aplica mutación polinomial a una sub-matriz que representa un subconjunto de columnas del espacio original.
+// Off: Matrix N x K con los valores de las K columnas seleccionadas.
+// colMask: vector bool de tamaño prob.D; true en las posiciones correspondientes a las K columnas de Off.
+//          Debe tener exactamente K entradas true para extraer los bounds correctos.
+// proM: probabilidad de mutación; tasa real por gen = proM/K.
+// disM: índice de distribución de la mutación polinomial.
+// Retorna: Matrix N x K con los valores mutados y clampeados a bounds.
 inline Matrix PM_cols(Problem& prob, Matrix Off, const std::vector<bool>& colMask,
                       double proM = 1.0, double disM = 20.0) {
     int N = Off.rows(), K = Off.cols();
@@ -87,8 +95,11 @@ inline Matrix PM_cols(Problem& prob, Matrix Off, const std::vector<bool>& colMas
     return Off;
 }
 
-// GAhalf crossover + PM for the allZero columns subset.
-// Parent: 2N x K (K = number of allZero columns), colMask selects these K columns.
+// GAhalfCross seguido de mutación polinomial, para el subconjunto de columnas allZero.
+// Combina GAhalfCross + PM_cols en un solo paso conveniente.
+// Parent: Matrix 2N x K (K = número de columnas allZero).
+// colMask: vector bool de tamaño prob.D que selecciona las K columnas.
+// Retorna: Matrix N x K con los hijos cruzados y mutados.
 inline Matrix GAhalf(Problem& prob, const Matrix& Parent, const std::vector<bool>& colMask,
                      double proC = 1.0, double disC = 20.0,
                      double proM = 1.0, double disM = 20.0) {
@@ -106,6 +117,26 @@ struct Reproduction1Result {
 
 Population MOEACKF(Problem&, bool);  // forward decl to allow Reproduction1 to be separate
 
+// Reproducción con reducción de dimensionalidad (Dual Dimension Reduction) de MOEA-CKF.
+// Genera offspring para el Grupo 1 (individuos seleccionados por Pop1Site).
+// Para las máscaras: usa BinaryCrossover + BinaryMutation separadamente en grupos NSV y SV.
+// Para los valores reales: aplica SVD sobre las variables no-siempre-cero (dimensión reducida),
+//   cruza en el espacio reducido con GAhalfCross, y reprojecta. Las variables siempre-cero
+//   reciben GAhalf directo.
+// prob: problema actual.
+// Pop1: subpoblación del Grupo 1 (individuos con Pop1Site[i] == true).
+// Dec1: Matrix con las decisiones brutas del Grupo 1.
+// Mask1: MatrixB con las máscaras del Grupo 1.
+// FrontNo: números de frente de TODA la población (misma indexación que Pop1Site).
+// CrowdDis: distancias de crowding de TODA la población.
+// Pop1Site: vector bool de tamaño N que indica qué individuos pertenecen al Grupo 1.
+// LocalK: conocimiento de esparcidad local (frente 1).
+// GlobalK: conocimiento de esparcidad global (toda la población).
+// NSV: vector bool D indicando variables no-significativas.
+// SV: vector bool D indicando variables significativas.
+// theta: fracción de elite (ratio de Grupo1 que está en el frente 1).
+// isReal: true si el problema es de variables reales.
+// Retorna: Reproduction1Result con OffDec (decisiones), OffMask (máscaras) y len1 (número de offspring).
 Reproduction1Result Reproduction1(
     Problem& prob,
     const Population& Pop1, const Matrix& Dec1, const MatrixB& Mask1,

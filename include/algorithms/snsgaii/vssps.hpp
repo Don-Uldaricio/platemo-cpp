@@ -2,8 +2,15 @@
 #include "../../core/Problem.hpp"
 #include "../../utils/Random.hpp"
 
-// Variable Stripe Sparse Population Sampling (VSSPS).
-// Creates individuals with different sparsity levels using stripe patterns.
+// Variable Stripe Sparse Population Sampling (VSSPS): inicialización especializada para problemas esparcidos.
+// Genera N individuos con diferentes niveles de esparcidad usando un patrón de "franjas":
+// cada individuo tiene una franja contigua de posiciones activas (no-cero), y el resto son ceros.
+// El ancho de la franja varía desde alta densidad hasta baja densidad a través de la población,
+// garantizando diversidad en el eje de complejidad desde la primera generación.
+// prob: problema que define N, D y Evaluation().
+// sLower: esparcidad mínima (fracción de ceros del individuo más denso), default 0.75.
+// sUpper: esparcidad máxima (fracción de ceros del individuo más esparcido), default 1.0.
+// Retorna: Population de N individuos con patrones de esparcidad estructurados y evaluados.
 inline Population vssps(Problem& prob, double sLower = 0.75, double sUpper = 1.0) {
     int N = prob.N;
     int D = prob.D;

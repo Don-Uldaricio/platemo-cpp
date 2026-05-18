@@ -11,8 +11,18 @@
 #include <iostream>
 #include <algorithm>
 
-// MOEA-CKF: Multi-objective Evolutionary Algorithm based on Cross-scale Knowledge Fusion
-// Reference: Z. Ding et al., IEEE TSMC 2024
+// MOEA-CKF: Multi-objective Evolutionary Algorithm based on Cross-scale Knowledge Fusion.
+// Algoritmo evolutivo multi-objetivo con fusión de conocimiento entre escalas para problemas esparcidos.
+// Referencia: Z. Ding et al., IEEE TSMC 2024.
+// Flujo por generación:
+//   1. SparsityAnalysis: clasifica variables en SV (significativas) y NSV (no-significativas).
+//   2. Divide la población en Grupo1 (fracción rho) y Grupo2 (fracción 1-rho).
+//   3. Grupo1 → Reproduction1 (reducción de dimensionalidad con SVD, crossover en espacio reducido).
+//   4. Grupo2 → Reproduction2 (crossover por grupos SV/NSV separados).
+//   5. Selección CKF que actualiza rho según qué estrategia generó más supervivientes.
+// prob: problema a optimizar.
+// verbose: si true, imprime FE y tamaño de población en cada generación.
+// Retorna: Population final de N soluciones al agotar el presupuesto de evaluaciones.
 Population MOEACKF(Problem& prob, bool verbose = false) {
     int D = prob.D;
 

@@ -4,11 +4,14 @@
 #include <algorithm>
 #include <numeric>
 
-// K-tournament selection.
-// Returns N winner indices (0-based).
-// Selects the candidate with lexicographically smallest fitness tuple.
-// fitness: vector of fitness arrays, one per criterion (lower is better).
-// E.g., TournamentSelection(2, 100, {frontNo}, {-crowdDis})
+// Selección por torneo de tamaño K que produce N ganadores.
+// En cada torneo, se eligen K candidatos aleatorios y gana el de menor rank lexicográfico
+// sobre los criterios de fitness dados. Menor valor = mejor en cada criterio.
+// K: tamaño del torneo (típicamente 2).
+// N: número de ganadores a producir (con reemplazo).
+// fitness: vector de criterios; cada criterio es un vector de tamaño popSize.
+//          Ejemplo: TournamentSelection(2, 100, {frontNo, negCrowdDis})
+// Retorna: vector de N índices (0-based) de los ganadores de cada torneo.
 inline std::vector<int> TournamentSelection(int K, int N, const std::vector<std::vector<double>>& fitness) {
     if (fitness.empty() || fitness[0].empty()) return {};
 
@@ -50,12 +53,14 @@ inline std::vector<int> TournamentSelection(int K, int N, const std::vector<std:
     return winners;
 }
 
-// Convenience: single fitness criterion
+// Overload para un único criterio de fitness.
+// fit: vector de tamaño popSize con el fitness de cada solución (menor = mejor).
 inline std::vector<int> TournamentSelection(int K, int N, const std::vector<double>& fit) {
     return TournamentSelection(K, N, std::vector<std::vector<double>>{fit});
 }
 
-// Two criteria
+// Overload para dos criterios de fitness (caso típico de NSGA-II: frente + crowding negado).
+// fit1: primer criterio (ej. frontNo), fit2: segundo criterio (ej. -crowdDis).
 inline std::vector<int> TournamentSelection(int K, int N,
     const std::vector<double>& fit1, const std::vector<double>& fit2) {
     return TournamentSelection(K, N, std::vector<std::vector<double>>{fit1, fit2});

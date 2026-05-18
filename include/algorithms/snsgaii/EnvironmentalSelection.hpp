@@ -12,7 +12,12 @@ struct EnvSelNSGA2Result {
     std::vector<double> CrowdDis;
 };
 
-// NSGA-II environmental selection
+// Selección ambiental de NSGA-II: reduce la población combinada (padres + hijos) a N individuos.
+// Estrategia: incluye todos los frentes completos que quepan en N; del último frente
+// rellena los lugares restantes eligiendo los de mayor distancia de crowding.
+// pop: población combinada (padres + hijos), tamaño > N.
+// N: tamaño objetivo de la siguiente generación.
+// Retorna: EnvSelNSGA2Result con la población seleccionada, sus números de frente y distancias de crowding.
 EnvSelNSGA2Result EnvironmentalSelection_NSGA2(const Population& pop, int N) {
     Matrix objs = getObjs(pop);
     Matrix cons = getCons(pop);

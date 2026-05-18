@@ -21,6 +21,23 @@ struct SparsityResult {
     double theta;
 };
 
+// Analiza la esparcidad de la población actual para clasificar variables en grupos.
+// Se ejecuta en cada generación del MOEA-CKF para actualizar el conocimiento sobre qué variables
+// son importantes (SV) y cuáles no (NSV).
+// Pasos:
+//   1. Extrae el "conocimiento local" del frente 1 (elite): detecta variables siempre activas,
+//      siempre inactivas, o mixtas.
+//   2. Extrae el "conocimiento global" de toda la población (mismos tres casos).
+//   3. Normaliza el Fitness acumulado y aplica un ajuste por frecuencia de aparición en la elite.
+//   4. Clasifica con k-means (k=2) en variables significativas (SV) y no-significativas (NSV).
+// prob: problema actual (se usa prob.FE y prob.maxFE para el ajuste temporal).
+// Mask: MatrixB N x D con las máscaras de la población actual (true = variable activa).
+// FrontNo: vector de N doubles con el número de frente de cada solución.
+// Fitness: vector de D doubles con la importancia acumulada de cada variable (se actualiza y retorna).
+// NSV_prev: clasificación NSV de la generación anterior (usada si k-means falla).
+// SV_prev: clasificación SV de la generación anterior.
+// Retorna: SparsityResult con Local, Global (conocimiento de esparcidad), Fitness actualizado,
+//          NSV, SV (clasificación binaria de variables), y theta (fracción de elite).
 SparsityResult SparsityAnalysis(
     const Problem& prob,
     const MatrixB& Mask,

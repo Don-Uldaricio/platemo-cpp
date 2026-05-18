@@ -3,9 +3,16 @@
 #include "sm2target.hpp"
 #include "../../utils/Random.hpp"
 
-// Sparse Simulated Binary Crossover.
-// Handles zero/non-zero patterns: applies SBX to matching positions,
-// randomly swaps mismatched zero/non-zero positions.
+// Sparse Simulated Binary Crossover (SSBX): versión de SBX que respeta el patrón de esparcidad.
+// Para cada par de padres, separa las posiciones en:
+//   - "matching": ambos cero o ambos no-cero → aplica SBX estándar (preserva patrón).
+//   - "not matching": uno cero y el otro no-cero → intercambia aleatoriamente con ratio uniforme.
+// Parent: Matrix 2N x D (primeras N filas = Parent1, siguientes N = Parent2).
+// lb: Vector D con bounds inferiores por variable.
+// ub: Vector D con bounds superiores por variable.
+// proC: probabilidad de crossover por individuo (default 1.0).
+// disC: índice de distribución SBX (default 20).
+// Retorna: Matrix 2N x D con los dos hijos por par.
 inline Matrix ssbx(const Matrix& Parent,
                    const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
                    double proC = 1.0, double disC = 20.0)

@@ -6,8 +6,16 @@
 #include "vssps.hpp"
 #include <iostream>
 
-// S-NSGA-II: Sparse Non-dominated Sorting Genetic Algorithm II
-// Reference: I. Kropp et al., IEEE TEVC 2024
+// S-NSGA-II: Sparse Non-dominated Sorting Genetic Algorithm II.
+// Algoritmo evolutivo multi-objetivo diseñado para problemas esparcidos.
+// Referencia: I. Kropp et al., IEEE TEVC 2024.
+// Flujo por generación:
+//   1. Selección por torneo 2-way con (frontNo, -crowdDis) como criterios.
+//   2. Crossover esparcido (SSBX) + mutación esparcida (SPM).
+//   3. Selección ambiental NSGA-II (merge padres+hijos → top N).
+// prob: problema a optimizar (define N, D, maxFE, Evaluation, etc.).
+// verbose: si true, imprime FE y tamaño de población en cada generación.
+// Retorna: Population final de N soluciones al agotar el presupuesto de evaluaciones.
 Population SNSGAII(Problem& prob, bool verbose = false) {
     // Initial population via VSSPS
     Population Population_ = vssps(prob, 0.75, 1.0);

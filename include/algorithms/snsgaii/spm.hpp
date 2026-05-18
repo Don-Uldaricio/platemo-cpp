@@ -6,8 +6,19 @@
 #include <cmath>
 #include <algorithm>
 
-// Sparse Polynomial Mutation.
-// Mutates both values (on non-zeros) and sparsity patterns.
+// Sparse Polynomial Mutation (SPM): mutación diseñada para poblaciones esparcidas.
+// Realiza dos tipos de mutación de forma independiente:
+//   1. Mutación de valores: aplica mutación polinomial a los pesos no-cero.
+//   2. Mutación de esparcidad: perturba la fracción de ceros de cada individuo
+//      con mutación polinomial, y luego ajusta los pesos con sm2target.
+// Pop: Matrix N x D con los pesos actuales (cero = inactivo).
+// lb: Vector D con bounds inferiores.
+// ub: Vector D con bounds superiores.
+// probMut:  prob. de mutar valores; la tasa real por gen es probMut/D (default 1.0).
+// distrMut: índice de distribución para mutación de valores (default 20).
+// probSMut: prob. de mutar la esparcidad; la tasa real es probSMut/D (default 1.0).
+// distrSMut: índice de distribución para mutación de esparcidad (default 20).
+// Retorna: Matrix N x D con los pesos mutados.
 inline Matrix spm(const Matrix& Pop,
                   const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
                   double probMut   = 1.0, double distrMut  = 20.0,

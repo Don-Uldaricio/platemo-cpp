@@ -4,8 +4,12 @@
 #include <cmath>
 #include <algorithm>
 
-// Unbalanced binary mutation.
-// Offspring: N x D boolean matrix; mutated in place.
+// Mutación binaria no-balanceada sobre máscaras de esparcidad.
+// Para cada individuo, calcula tasas de mutación diferenciadas para unos y ceros
+// de forma que la densidad promedio se preserve estadísticamente.
+// La tasa efectiva por bit es r = min(1/D, 2·MOne, 2·(1-MOne)), donde MOne es la densidad actual.
+// Offspring_in: MatrixB N x D con las máscaras a mutar.
+// Retorna: MatrixB N x D con las máscaras mutadas.
 inline MatrixB BinaryMutation(const MatrixB& Offspring_in) {
     int N = Offspring_in.rows(), D = Offspring_in.cols();
     MatrixB Offspring = Offspring_in;

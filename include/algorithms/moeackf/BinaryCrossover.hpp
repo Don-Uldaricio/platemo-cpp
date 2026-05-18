@@ -5,9 +5,12 @@
 #include <cmath>
 #include <algorithm>
 
-// Unbalanced binary crossover.
-// Parent1, Parent2: N x D boolean matrices (0/1 as double).
-// Returns offspring N x D boolean matrix.
+// Crossover binario no-balanceado sobre máscaras de esparcidad.
+// En las posiciones donde los padres difieren, cada bit del hijo se invierte con una probabilidad
+// calculada para preservar la densidad promedio de unos. Las posiciones iguales se heredan directamente.
+// Parent1: MatrixB N x D con la máscara del primer padre.
+// Parent2: MatrixB N x D con la máscara del segundo padre.
+// Retorna: MatrixB N x D con la máscara del hijo (inicia como copia de Parent1).
 inline MatrixB BinaryCrossover(const MatrixB& Parent1, const MatrixB& Parent2) {
     int N = Parent1.rows(), D = Parent1.cols();
     MatrixB Offspring = Parent1;

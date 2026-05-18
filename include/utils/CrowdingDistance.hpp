@@ -6,8 +6,12 @@
 #include <limits>
 #include <set>
 
-// Compute crowding distances for each solution front-by-front
-// FrontNo: 1-indexed front numbers (inf for unassigned)
+// Calcula la distancia de crowding de NSGA-II para cada solución, frente por frente.
+// Mide qué tan aislada está una solución respecto a sus vecinas dentro de su frente.
+// PopObj: Matrix N x M con los objetivos de cada solución.
+// FrontNo: vector de tamaño N con el número de frente 1-indexado de cada solución (inf = no asignada).
+// Retorna: vector de N doubles con la distancia de crowding de cada solución.
+//          Las soluciones extremas (mínimo/máximo de algún objetivo) reciben distancia infinita.
 inline std::vector<double> CrowdingDistance(const Matrix& PopObj, const std::vector<double>& FrontNo) {
     int N = PopObj.rows(), M = PopObj.cols();
     std::vector<double> CrowdDis(N, 0.0);
@@ -55,7 +59,10 @@ inline std::vector<double> CrowdingDistance(const Matrix& PopObj, const std::vec
     return CrowdDis;
 }
 
-// Overload: without front numbers (treat as single front)
+// Overload sin números de frente: trata toda la población como un único frente.
+// Útil cuando ya se filtró la población a un solo frente.
+// PopObj: Matrix N x M.
+// Retorna: vector de N doubles con la distancia de crowding de cada solución.
 inline std::vector<double> CrowdingDistance(const Matrix& PopObj) {
     int N = PopObj.rows();
     std::vector<double> FrontNo(N, 1.0);

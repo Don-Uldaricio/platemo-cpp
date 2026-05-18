@@ -4,9 +4,18 @@
 #include "spm.hpp"
 #include <functional>
 
-// Sparse GA operator: applies crossover then mutation.
-// crossoverFn: (Parent, lb, ub, proC, disC) -> Offspring (2N x D)
-// mutationFn:  (Pop, lb, ub, probMut, distrMut, probSMut, distrSMut) -> Pop (N x D)
+// Operador genético completo para problemas esparcidos: aplica cruce y luego mutación.
+// Combina ssbx (o sbx) + spm y evalúa el resultado con prob.Evaluation().
+// prob: problema que provee los bounds y el método Evaluation.
+// parent: mating pool de 2N individuos (los pares están en [0..N-1] y [N..2N-1]).
+// proC: probabilidad de crossover (default 1.0).
+// disC: índice de distribución del cruce (default 20).
+// proM: probabilidad de mutación de valores (default 1.0).
+// disM: índice de distribución de mutación de valores (default 20).
+// proSM: probabilidad de mutación de esparcidad (default 1.0).
+// disSM: índice de distribución de mutación de esparcidad (default 20).
+// useSsbx: si true usa SSBX (sparse-aware), si false usa SBX estándar (default true).
+// Retorna: Population de N hijos evaluados.
 inline Population sparseOperatorGA(
     Problem& prob,
     const Population& parent,

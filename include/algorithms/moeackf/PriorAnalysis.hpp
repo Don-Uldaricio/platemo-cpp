@@ -13,7 +13,15 @@ struct PriorAnalysisResult {
     std::vector<double> Fitness;
 };
 
-// Prior analysis initialization for MOEA-CKF
+// Fase de inicialización del análisis previo de MOEA-CKF.
+// Estima la importancia de cada variable evaluando soluciones donde solo una variable está activa
+// (máscara identidad). Las variables que producen soluciones con mejor ranking reciben mayor peso.
+// Para problemas reales repite 5 veces (nRep=5) para reducir el ruido estadístico.
+// Luego genera la población inicial con sesgo hacia las variables más importantes usando torneo.
+// prob: problema a optimizar (se usarán prob.N, prob.D, prob.Evaluation, etc.).
+// isReal: true si todas las variables son reales (activa las 5 repeticiones y muestreo uniforme).
+// Retorna: PriorAnalysisResult con TDec (decisiones), TMask (máscaras), TempPop (soluciones evaluadas)
+//          y Fitness (importancia acumulada de cada variable, menor = más importante).
 PriorAnalysisResult PriorAnalysis_initialization(Problem& prob, bool isReal) {
     int D = prob.D;
 
