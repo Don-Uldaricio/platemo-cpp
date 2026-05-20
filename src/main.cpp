@@ -12,6 +12,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <set>
 #include <string>
 #include <chrono>
 #include <numeric>
@@ -71,20 +72,57 @@ void printHelp(const char* prog) {
               << "  IGD (Inverted Generational Distance, lower is better)\n";
 }
 
-// Save Pareto front objectives to a CSV file
-void saveParetoFront(const Population& pop, const std::string& fname) {
+// Save Pareto front objectives + weight vectors to a CSV file.
+// Also writes a companion _meta.json with topology info for the Python visualizer.
+void saveParetoFront(const Population& pop, const std::string& fname,
+                     const RunConfig& rcfg, int nFeatures, int nHidden, int nOutputs) {
     Population best = getBest(pop);
     if (best.empty()) { std::cerr << "No feasible solutions to save.\n"; return; }
 
     std::ofstream f(fname);
     if (!f.is_open()) { std::cerr << "Cannot open " << fname << "\n"; return; }
 
-    f << "f1_complexity,f2_train_error\n";
-    for (const auto& s : best)
-        f << s.obj(0) << "," << s.obj(1) << "\n";
+    int D = best.empty() ? 0 : static_cast<int>(best[0].dec.size());
+
+    // Header: objectives + one column per weight
+    f << "f1_complexity,f2_train_error";
+    for (int j = 0; j < D; j++) f << ",w" << j;
+    f << "\n";
+
+    std::set<std::pair<double,double>> seen;
+    int written = 0;
+    for (const auto& s : best) {
+        if (seen.emplace(s.obj(0), s.obj(1)).second) {
+            f << std::setprecision(10) << s.obj(0) << "," << s.obj(1);
+            for (int j = 0; j < D; j++) f << "," << s.dec(j);
+            f << "\n";
+            ++written;
+        }
+    }
 
     std::cout << "  Pareto front saved to: " << fname
-              << " (" << best.size() << " solutions)\n";
+              << " (" << written << " solutions, D=" << D << " weights)\n";
+
+    // Write companion metadata JSON for the Python visualizer
+    std::string metaFname = fname;
+    auto pos = metaFname.rfind("_front.csv");
+    if (pos != std::string::npos)
+        metaFname.replace(pos, 10, "_meta.json");
+    else
+        metaFname += ".meta.json";
+
+    std::ofstream mf(metaFname);
+    if (mf.is_open()) {
+        mf << "{\n"
+           << "  \"nFeatures\": " << nFeatures << ",\n"
+           << "  \"nHidden\": "   << nHidden   << ",\n"
+           << "  \"nOutputs\": "  << nOutputs  << ",\n"
+           << "  \"wScale\": "    << rcfg.wScale  << ",\n"
+           << "  \"dataNo\": "    << rcfg.dataNo  << ",\n"
+           << "  \"D\": "         << D             << "\n"
+           << "}\n";
+        std::cout << "  Metadata saved to:    " << metaFname << "\n";
+    }
 }
 
 int main(int argc, char* argv[]) {
@@ -287,8 +325,15 @@ int main(int argc, char* argv[]) {
         std::cout << "\n";
 
         // Save last run Pareto front if requested
-        if (!cfg.outFile.empty() && run == cfg.nRuns - 1)
-            saveParetoFront(finalPop, cfg.outFile);
+        if (!cfg.outFile.empty() && run == cfg.nRuns - 1) {
+            int nF = 0, nH = cfg.nHidden, nO = 0;
+            if (cfg.problem == "SparseSNN") {
+                auto& sp = static_cast<SparseSNN&>(prob);
+                nF = sp.nFeatures;
+                nO = sp.nOutputs;
+            }
+            saveParetoFront(finalPop, cfg.outFile, cfg, nF, nH, nO);
+        }
     }
 
     // Summary statistics over multiple runs
