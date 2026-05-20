@@ -2,9 +2,11 @@
 """Plot Pareto fronts from experiment results.
 
 Usage:
-    python plot_pareto.py                        # latest results dir
+    python plot_pareto.py                        # latest results dir (runs only)
     python plot_pareto.py results/20260514_145135
-    python plot_pareto.py results/20260514_145135 --save
+    python plot_pareto.py --combined             # overlay combined Pareto front
+    python plot_pareto.py --run 2               # show only run 2
+    python plot_pareto.py --save                 # save as PNG
 """
 
 import sys
@@ -48,7 +50,7 @@ def load_fronts(fronts_dir: Path) -> dict:
     return groups
 
 
-def plot_group(ax, key, runs, run_count):
+def plot_group(ax, key, runs, run_count, show_combined=False):
     algo, ds, nh = key
     colors = cm.tab10(np.linspace(0, 0.9, run_count))
 
@@ -69,7 +71,7 @@ def plot_group(ax, key, runs, run_count):
         all_points.append(sorted_pts)
 
     # Combined Pareto front across all runs
-    if len(runs) > 1:
+    if show_combined and len(runs) > 1:
         combined = np.vstack(all_points)
         mask = pareto_filter(combined)
         front = combined[mask]
@@ -93,6 +95,8 @@ def main():
     parser = argparse.ArgumentParser(description="Plot Pareto fronts from experiment results")
     parser.add_argument("results_dir", nargs="?", help="Path to results run directory")
     parser.add_argument("--save", action="store_true", help="Save plot as PNG instead of showing")
+    parser.add_argument("--combined", action="store_true", help="Overlay combined Pareto front on each subplot")
+    parser.add_argument("--run", type=int, default=None, metavar="N", help="Show only run N")
     args = parser.parse_args()
 
     base = Path("results")
@@ -124,7 +128,8 @@ def main():
     run_count = max(len(v) for v in groups.values())
     for idx, (key, runs) in enumerate(sorted(groups.items())):
         ax = axes[idx // ncols][idx % ncols]
-        plot_group(ax, key, runs, run_count)
+        filtered = [(rid, pts) for rid, pts in runs if args.run is None or rid == args.run]
+        plot_group(ax, key, filtered, run_count, show_combined=args.combined)
 
     # Hide unused subplots
     for idx in range(n, nrows * ncols):
@@ -139,6 +144,7 @@ def main():
         print(f"Saved to {out}")
     else:
         plt.show()
+
 
 
 if __name__ == "__main__":
