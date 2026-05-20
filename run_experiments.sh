@@ -11,13 +11,13 @@ CSVFILE=$RUN_DIR/results.csv
 CONVFILE=$RUN_DIR/convergence.csv
 
 ALGOS=(MOEACKF)
-DATASETS=(1)
-NHIDDENS=(20)
-POPSIZE=100
+DATASETS=(1 2 3 4)
+NHIDDENS=(40)
+POPSIZE=150
 MAXFE=5000   # quick test default — use 20000-40000 for publication runs
-RUNS=1
-SEED=100
-JOBS=1       # parallel processes — tune to number of physical cores
+RUNS=3
+SEED=1
+JOBS=$(nproc)       # parallel processes — tune to number of physical cores
 WSCALE=20    # weight scale factor: pesos [0,1] × WSCALE antes de setWeights()
              # con el modelo Izhikevich se necesita WSCALE ≥ 10 para que las neuronas disparen
 SANITY_CHECK=false  # true: corre diagnóstico de configuraciones extremas antes de los jobs
@@ -80,10 +80,10 @@ parallel --jobs "$JOBS" --bar \
 
 # Merge results
 echo "Merging results..."
-first=$(ls "$TMPDIR"/*_run*.csv | grep -v '_conv' | head -1)
+first=$(ls "$TMPDIR"/*_run*.csv | grep -v '_conv\|_front' | head -1)
 head -1 "$first" > "$CSVFILE"
 for f in "$TMPDIR"/*.csv; do
-    [[ "$f" == *_conv.csv ]] && continue
+    [[ "$f" == *_conv.csv || "$f" == *_front.csv ]] && continue
     tail -n +2 "$f"
 done >> "$CSVFILE"
 
@@ -98,10 +98,10 @@ if [[ -n "$first_conv" ]]; then
     echo "Conv rows written: $(( $(wc -l < "$CONVFILE") - 1 ))"
 fi
 
-# Move Pareto front files out before cleanup
+# Move Pareto front files and metadata out before cleanup
 FRONTSDIR=$RUN_DIR/fronts
 mkdir -p "$FRONTSDIR"
-for f in "$TMPDIR"/*_front.csv; do
+for f in "$TMPDIR"/*_front.csv "$TMPDIR"/*_meta.json; do
     [[ -f "$f" ]] && mv "$f" "$FRONTSDIR/"
 done
 
