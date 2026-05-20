@@ -52,6 +52,7 @@ PriorAnalysisResult PriorAnalysis_initialization(Problem& prob, bool isReal) {
                 evalDec(i,j) = Mask(i,j) ? Dec(i,j) : 0.0;
 
         Population pop = prob.Evaluation(evalDec);
+        prob.MaybeLog(pop);
 
         // Accumulate to TDec, TMask, TempPop
         if (TDec.rows() == 0) {
@@ -103,6 +104,7 @@ PriorAnalysisResult PriorAnalysis_initialization(Problem& prob, bool isReal) {
             evalDec2(i,j) = Mask2(i,j) ? Dec2(i,j) : 0.0;
 
     Population pop2 = prob.Evaluation(evalDec2);
+    prob.MaybeLog(pop2);
 
     // Append
     {
