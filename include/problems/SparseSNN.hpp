@@ -41,7 +41,14 @@ public:
     int    nClasses  = 0;
     int    nOutputs  = 0;
     int    nSamples  = 0;
-    double wScale    = 1.0;  // multiplicador sobre pesos antes de setWeights(); sparsity se mide sin escala
+    double wScale    = 1.0;   // multiplicador sobre pesos antes de setWeights(); sparsity se mide sin escala
+
+    // SNN simulation timing — tuneable via CLI / Bayesian optimization
+    double dt                  = 1.0;    // timestep (ms)
+    double encoding_duration   = 50.0;  // Poisson encoding window (ms)
+    double evaluation_duration = 100.0; // total simulation window (ms)
+    double max_rate            = 100.0; // PoissonEncoder max firing rate (Hz)
+    double refractory_period   = 5.0;   // PoissonEncoder refractory period (ms)
 
     // Training dataset for evaluateAccuracy(): (normalized_input, 0-indexed label)
     std::vector<std::pair<std::vector<double>, int>> trainDataset;
@@ -276,9 +283,9 @@ private:
     // Retorna: par (Network*, Simulator*) envueltos en unique_ptr.
     std::pair<std::unique_ptr<Network>, std::unique_ptr<Simulator>> makeNetSim() {
         SimulationConfig cfg;
-        cfg.dt                  = 1.0;
-        cfg.encoding_duration   = 50.0;
-        cfg.evaluation_duration = 100.0;
+        cfg.dt                  = dt;
+        cfg.encoding_duration   = encoding_duration;
+        cfg.evaluation_duration = evaluation_duration;
         cfg.verbose             = false;
 
         auto n = std::make_unique<Network>(cfg.dt, /*allow_recurrent=*/false);
@@ -310,7 +317,7 @@ private:
         }
 
         auto s = std::make_unique<Simulator>(n.get(), cfg);
-        s->setEncoder(std::make_unique<PoissonEncoder>(100.0, true, 5.0));
+        s->setEncoder(std::make_unique<PoissonEncoder>(max_rate, true, refractory_period));
         return {std::move(n), std::move(s)};
     }
 

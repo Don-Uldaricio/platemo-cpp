@@ -1,5 +1,6 @@
 #pragma once
 #include "../../core/Problem.hpp"
+#include "../../core/AlgoConfig.hpp"
 #include "../../utils/NDSort.hpp"
 #include "../../utils/CrowdingDistance.hpp"
 #include "../../utils/TournamentSelection.hpp"
@@ -23,7 +24,8 @@
 // prob: problema a optimizar.
 // verbose: si true, imprime FE y tamaño de población en cada generación.
 // Retorna: Population final de N soluciones al agotar el presupuesto de evaluaciones.
-Population MOEACKF(Problem& prob, bool verbose = false) {
+Population MOEACKF(Problem& prob, bool verbose = false,
+                   const AlgoConfig& acfg = AlgoConfig{}) {
     int D = prob.D;
 
     bool isReal = true;
@@ -101,7 +103,7 @@ Population MOEACKF(Problem& prob, bool verbose = false) {
                                     FrontNo, CrowdDis, Pop1Site,
                                     spRes.Local, spRes.Global,
                                     spRes.NSV, spRes.SV,
-                                    spRes.theta, isReal);
+                                    spRes.theta, isReal, acfg);
             len1    = r1.len1;
             OffDec1 = r1.OffDec;
             OffMask1= r1.OffMask;
@@ -139,7 +141,7 @@ Population MOEACKF(Problem& prob, bool verbose = false) {
                     mMask.row(k) = Mask2.row(mk);
                 }
 
-                auto r2  = Reproduction2(prob, mDec, mMask, spRes.NSV, spRes.SV, isReal);
+                auto r2  = Reproduction2(prob, mDec, mMask, spRes.NSV, spRes.SV, isReal, acfg);
                 OffDec2  = r2.OffDec;
                 OffMask2 = r2.OffMask;
 

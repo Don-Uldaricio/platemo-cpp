@@ -1,5 +1,6 @@
 #include "core/Problem.hpp"
 #include "core/Solution.hpp"
+#include "core/AlgoConfig.hpp"
 #include "problems/SparseNN.hpp"
 #include "problems/SparseSNN.hpp"
 #include "algorithms/moeackf/MOEACKF.hpp"
@@ -35,6 +36,16 @@ struct RunConfig {
     std::string csvOutFile;
     std::string convOutFile;
     int logInterval = 0;
+
+    // MOEA operator hyperparameters (tuneable via CLI / Bayesian optimization)
+    AlgoConfig acfg;
+
+    // SNN simulation timing hyperparameters
+    double dt                  = 1.0;
+    double encoding_duration   = 50.0;
+    double evaluation_duration = 100.0;
+    double max_rate            = 100.0;
+    double refractory_period   = 5.0;
 };
 
 void printHelp(const char* prog) {
@@ -56,6 +67,20 @@ void printHelp(const char* prog) {
               << "  --wscale    <float>            Weight scale factor applied at evaluation (default: 1.0)\n"
               << "  --sanity-check                 Evaluate extreme weight configs and exit (no GA run)\n"
               << "  --verbose                      Print per-generation progress\n"
+              << "\nMOEA operator hyperparameters:\n"
+              << "  --disC      <float>            SBX distribution index (default: 20.0)\n"
+              << "  --disM      <float>            Polynomial mutation distribution index (default: 20.0)\n"
+              << "  --proM      <float>            Polynomial mutation probability multiplier (default: 1.0)\n"
+              << "  --disSM     <float>            Sparsity mutation distribution index (default: 20.0)\n"
+              << "  --proSM     <float>            Sparsity mutation probability multiplier (default: 1.0)\n"
+              << "  --sLower    <float>            VSSPS minimum sparsity (default: 0.75)\n"
+              << "  --sUpper    <float>            VSSPS maximum sparsity (default: 1.0)\n"
+              << "\nSNN simulation timing hyperparameters:\n"
+              << "  --dt                  <float>  Simulation timestep ms (default: 1.0)\n"
+              << "  --encoding-duration   <float>  Poisson encoding window ms (default: 50.0)\n"
+              << "  --eval-duration       <float>  Total simulation window ms (default: 100.0)\n"
+              << "  --max-rate            <float>  PoissonEncoder max firing rate Hz (default: 100.0)\n"
+              << "  --refractory-period   <float>  PoissonEncoder refractory period ms (default: 5.0)\n"
               << "\nProblems:\n"
               << "  SparseNN  : Multi-layer ANN with backprop fine-tuning (baseline)\n"
               << "  SparseSNN : Spiking neural network (Izhikevich) evaluated via spike decoding\n"
@@ -162,6 +187,20 @@ int main(int argc, char* argv[]) {
         else if (arg == "--wscale"       && i+1 < argc) cfg.wScale       = std::stod(argv[++i]);
         else if (arg == "--sanity-check")                cfg.sanityCheck  = true;
         else if (arg == "--verbose")                     cfg.verbose      = true;
+        // MOEA operator hyperparameters
+        else if (arg == "--disC"   && i+1 < argc) cfg.acfg.disC   = std::stod(argv[++i]);
+        else if (arg == "--disM"   && i+1 < argc) cfg.acfg.disM   = std::stod(argv[++i]);
+        else if (arg == "--proM"   && i+1 < argc) cfg.acfg.proM   = std::stod(argv[++i]);
+        else if (arg == "--disSM"  && i+1 < argc) cfg.acfg.disSM  = std::stod(argv[++i]);
+        else if (arg == "--proSM"  && i+1 < argc) cfg.acfg.proSM  = std::stod(argv[++i]);
+        else if (arg == "--sLower" && i+1 < argc) cfg.acfg.sLower = std::stod(argv[++i]);
+        else if (arg == "--sUpper" && i+1 < argc) cfg.acfg.sUpper = std::stod(argv[++i]);
+        // SNN simulation timing hyperparameters
+        else if (arg == "--dt"                 && i+1 < argc) cfg.dt                  = std::stod(argv[++i]);
+        else if (arg == "--encoding-duration"  && i+1 < argc) cfg.encoding_duration   = std::stod(argv[++i]);
+        else if (arg == "--eval-duration"      && i+1 < argc) cfg.evaluation_duration = std::stod(argv[++i]);
+        else if (arg == "--max-rate"           && i+1 < argc) cfg.max_rate            = std::stod(argv[++i]);
+        else if (arg == "--refractory-period"  && i+1 < argc) cfg.refractory_period   = std::stod(argv[++i]);
         else { std::cerr << "Unknown argument: " << arg << "\n"; printHelp(argv[0]); return 1; }
     }
 
@@ -192,9 +231,14 @@ int main(int argc, char* argv[]) {
         std::unique_ptr<Problem> probPtr;
         if (cfg.problem == "SparseSNN") {
             auto p = std::make_unique<SparseSNN>(cfg.dataNo, cfg.nHidden, cfg.dataPath);
-            p->N      = cfg.N;
-            p->maxFE  = cfg.maxFE;
-            p->wScale = cfg.wScale;
+            p->N                  = cfg.N;
+            p->maxFE              = cfg.maxFE;
+            p->wScale             = cfg.wScale;
+            p->dt                 = cfg.dt;
+            p->encoding_duration  = cfg.encoding_duration;
+            p->evaluation_duration= cfg.evaluation_duration;
+            p->max_rate           = cfg.max_rate;
+            p->refractory_period  = cfg.refractory_period;
             probPtr   = std::move(p);
         } else if (cfg.problem == "SparseNN") {
             auto p = std::make_unique<SparseNN>(cfg.dataNo, cfg.nHidden, cfg.dataPath);
@@ -261,9 +305,9 @@ int main(int argc, char* argv[]) {
         // Run algorithm
         Population finalPop;
         if (cfg.algorithm == "MOEACKF") {
-            finalPop = MOEACKF(prob, cfg.verbose);
+            finalPop = MOEACKF(prob, cfg.verbose, cfg.acfg);
         } else if (cfg.algorithm == "SNSGAII") {
-            finalPop = SNSGAII(prob, cfg.verbose);
+            finalPop = SNSGAII(prob, cfg.verbose, cfg.acfg);
         } else {
             std::cerr << "Unknown algorithm: " << cfg.algorithm << "\n";
             return 1;

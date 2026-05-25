@@ -1,5 +1,6 @@
 #pragma once
 #include "../../core/Problem.hpp"
+#include "../../core/AlgoConfig.hpp"
 #include "BinaryCrossover.hpp"
 #include "BinaryMutation.hpp"
 #include "../../utils/TournamentSelection.hpp"
@@ -144,7 +145,8 @@ Reproduction1Result Reproduction1(
     const std::vector<bool>& Pop1Site,
     const SparsityKnowledge& LocalK, const SparsityKnowledge& GlobalK,
     const std::vector<bool>& NSV, const std::vector<bool>& SV,
-    double theta, bool isReal)
+    double theta, bool isReal,
+    const AlgoConfig& acfg = AlgoConfig{})
 {
     int N  = (int)Pop1.size();
     int D  = prob.D;
@@ -261,7 +263,7 @@ Reproduction1Result Reproduction1(
             mating.row(i)   = Pop_reduce.row(i1);
             mating.row(N+i) = Pop_reduce.row(i2);
         }
-        Matrix Off_reduce = r1detail::GAhalfCross(mating);  // N x K_pca
+        Matrix Off_reduce = r1detail::GAhalfCross(mating, 1.0, acfg.disC);  // N x K_pca
 
         // Restore to original space
         Matrix T_OffDec = Off_reduce * Ureduce.transpose();  // N x Dred
@@ -271,7 +273,7 @@ Reproduction1Result Reproduction1(
         // Apply PM
         std::vector<bool> notZeroMask(D, false);
         for (int j : notZeroCols) notZeroMask[j] = true;
-        T_OffDec = r1detail::PM_cols(prob, T_OffDec, notZeroMask);
+        T_OffDec = r1detail::PM_cols(prob, T_OffDec, notZeroMask, acfg.proM, acfg.disM);
 
         for (int i = 0; i < N; i++)
             for (int k = 0; k < Dred; k++)
@@ -292,7 +294,7 @@ Reproduction1Result Reproduction1(
         }
         std::vector<bool> zeroMask(D, false);
         for (int j : zeroCols) zeroMask[j] = true;
-        Matrix zeroOff = r1detail::GAhalf(prob, zeroParents, zeroMask);
+        Matrix zeroOff = r1detail::GAhalf(prob, zeroParents, zeroMask, 1.0, acfg.disC, acfg.proM, acfg.disM);
         for (int i = 0; i < N; i++)
             for (int k = 0; k < K_zero; k++)
                 OffDec(i, zeroCols[k]) = zeroOff(i,k);

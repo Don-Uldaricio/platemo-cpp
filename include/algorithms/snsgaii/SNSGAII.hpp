@@ -1,5 +1,6 @@
 #pragma once
 #include "../../core/Problem.hpp"
+#include "../../core/AlgoConfig.hpp"
 #include "../../utils/TournamentSelection.hpp"
 #include "EnvironmentalSelection.hpp"
 #include "sparseOperatorGA.hpp"
@@ -16,9 +17,10 @@
 // prob: problema a optimizar (define N, D, maxFE, Evaluation, etc.).
 // verbose: si true, imprime FE y tamaño de población en cada generación.
 // Retorna: Population final de N soluciones al agotar el presupuesto de evaluaciones.
-Population SNSGAII(Problem& prob, bool verbose = false) {
+Population SNSGAII(Problem& prob, bool verbose = false,
+                   const AlgoConfig& acfg = AlgoConfig{}) {
     // Initial population via VSSPS
-    Population Population_ = vssps(prob, 0.75, 1.0);
+    Population Population_ = vssps(prob, acfg.sLower, acfg.sUpper);
 
     auto [pop, FrontNo, CrowdDis] = EnvironmentalSelection_NSGA2(Population_, prob.N);
     Population_ = pop;
@@ -36,9 +38,9 @@ Population SNSGAII(Problem& prob, bool verbose = false) {
 
         // Sparse crossover + mutation
         Population offspring = sparseOperatorGA(prob, matingPool,
-                                                1.0, 20.0,
-                                                1.0, 20.0,
-                                                1.0, 20.0,
+                                                1.0,        acfg.disC,
+                                                acfg.proM,  acfg.disM,
+                                                acfg.proSM, acfg.disSM,
                                                 true); // use ssbx
 
         // Merge and select

@@ -20,6 +20,26 @@ SEED=1
 JOBS=$(nproc)       # parallel processes — tune to number of physical cores
 WSCALE=20    # weight scale factor: pesos [0,1] × WSCALE antes de setWeights()
              # con el modelo Izhikevich se necesita WSCALE ≥ 10 para que las neuronas disparen
+
+# ── Hiperparámetros optimizados por Bayesian search ──────────────────────────
+# Reemplazá los valores con los de bayesian_search.py → "Best trial"
+# MOEA operators
+DISC=20.0     # SBX distribution index
+DISM=20.0     # polynomial mutation distribution index
+PROM=1.0      # polynomial mutation probability multiplier (tasa real = PROM/D por gen)
+DISSM=20.0    # sparsity mutation distribution index
+PROSM=1.0     # sparsity mutation probability multiplier
+SLOWER=0.75   # VSSPS minimum sparsity (min fracción de ceros en inicialización)
+SUPPER=1.0    # VSSPS maximum sparsity
+
+# SNN simulation timing
+DT=1.0              # timestep (ms)
+ENCODING_DUR=50.0   # ventana de codificación Poisson (ms)
+EVAL_DUR=100.0      # ventana total de simulación (ms); debe ser > ENCODING_DUR
+MAX_RATE=100.0      # PoissonEncoder max firing rate (Hz)
+REFRAC=5.0          # PoissonEncoder refractory period (ms)
+# ─────────────────────────────────────────────────────────────────────────────
+
 SANITY_CHECK=false  # true: corre diagnóstico de configuraciones extremas antes de los jobs
 
 mkdir -p "$RUN_DIR" "$TMPDIR"
@@ -60,12 +80,26 @@ run_one() {
         --seed     "$seed"     \
         --datapath "$DATAPATH" \
         --wscale   "$WSCALE"   \
+        --disC     "$DISC"     \
+        --disM     "$DISM"     \
+        --proM     "$PROM"     \
+        --disSM    "$DISSM"    \
+        --proSM    "$PROSM"    \
+        --sLower   "$SLOWER"   \
+        --sUpper   "$SUPPER"   \
+        --dt                "$DT"           \
+        --encoding-duration "$ENCODING_DUR" \
+        --eval-duration     "$EVAL_DUR"     \
+        --max-rate          "$MAX_RATE"     \
+        --refractory-period "$REFRAC"       \
         --csv-out  "$out"      \
         --conv-out "$conv_out" \
         --out      "$front_out"
 }
 export -f run_one
 export BIN DATAPATH TMPDIR POPSIZE MAXFE WSCALE BASE_SEED=$SEED
+export DISC DISM PROM DISSM PROSM SLOWER SUPPER
+export DT ENCODING_DUR EVAL_DUR MAX_RATE REFRAC
 
 total=$(( ${#ALGOS[@]} * ${#DATASETS[@]} * ${#NHIDDENS[@]} * RUNS ))
 echo "Output directory: $RUN_DIR"

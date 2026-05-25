@@ -1,5 +1,6 @@
 #pragma once
 #include "../../core/Problem.hpp"
+#include "../../core/AlgoConfig.hpp"
 #include "BinaryCrossover.hpp"
 #include "BinaryMutation.hpp"
 #include "../../utils/Random.hpp"
@@ -103,7 +104,8 @@ Reproduction2Result Reproduction2(
     Problem& prob,
     const Matrix& ParentDec, const MatrixB& ParentMask,
     const std::vector<bool>& NSV, const std::vector<bool>& SV,
-    bool isReal)
+    bool isReal,
+    const AlgoConfig& acfg = AlgoConfig{})
 {
     int half = ParentDec.rows() / 2;
     int N    = half;
@@ -170,8 +172,8 @@ Reproduction2Result Reproduction2(
                 p1row(0,k) = Parent1Dec(i, gIdx[k]);
                 p2row(0,k) = Parent2Dec(i, gIdx[k]);
             }
-            Matrix child = r2detail::SBXhalf(p1row, p2row);
-            child = r2detail::PM_subset(prob, child, site);
+            Matrix child = r2detail::SBXhalf(p1row, p2row, 1.0, acfg.disC);
+            child = r2detail::PM_subset(prob, child, site, acfg.proM, acfg.disM);
             for (int k = 0; k < (int)gIdx.size(); k++)
                 res.OffDec(i, gIdx[k]) = child(0,k);
         };
