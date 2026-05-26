@@ -5,7 +5,10 @@ Usage:
     python plot_pareto.py                        # latest results dir (runs only)
     python plot_pareto.py results/20260514_145135
     python plot_pareto.py --combined             # overlay combined Pareto front
-    python plot_pareto.py --run 2               # show only run 2
+    python plot_pareto.py --run 2                # show only run 2
+    python plot_pareto.py --ds 1                 # show only dataset 1 (Iris)
+    python plot_pareto.py --ds wine              # show only Wine dataset
+    python plot_pareto.py --nh 40                # show only nh=40
     python plot_pareto.py --save                 # save as PNG
 """
 
@@ -17,6 +20,8 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+
+DS_NAMES = {1: "Iris", 2: "Wine", 3: "German", 4: "Sonar"}
 
 
 def pareto_filter(points: np.ndarray) -> np.ndarray:
@@ -81,8 +86,7 @@ def plot_group(ax, key, runs, run_count, show_combined=False):
         ax.step(front[:, 0], front[:, 1], color="black", linewidth=1.2,
                 where="post", zorder=3)
 
-    ds_names = {1: "Iris", 2: "Wine", 3: "German", 4: "Sonar"}
-    ax.set_title(f"{algo} | {ds_names.get(ds, f'ds{ds}')} | nh={nh}", fontsize=9)
+    ax.set_title(f"{algo} | {DS_NAMES.get(ds, f'ds{ds}')} | nh={nh}", fontsize=9)
     ax.set_xlabel("f1: complexity (non-zero frac)", fontsize=8)
     ax.set_ylabel("f2: training error", fontsize=8)
     ax.set_xlim(-0.02, 1.02)
@@ -97,7 +101,22 @@ def main():
     parser.add_argument("--save", action="store_true", help="Save plot as PNG instead of showing")
     parser.add_argument("--combined", action="store_true", help="Overlay combined Pareto front on each subplot")
     parser.add_argument("--run", type=int, default=None, metavar="N", help="Show only run N")
+    parser.add_argument("--ds", type=str, default=None, metavar="ID",
+                        help="Show only dataset N (number or name: iris, wine, german, sonar)")
+    parser.add_argument("--nh", type=int, default=None, metavar="N",
+                        help="Show only results with N hidden neurons")
     args = parser.parse_args()
+
+    ds_filter = None
+    if args.ds is not None:
+        try:
+            ds_filter = int(args.ds)
+        except ValueError:
+            name_map = {v.lower(): k for k, v in DS_NAMES.items()}
+            ds_filter = name_map.get(args.ds.lower())
+            if ds_filter is None:
+                print(f"Unknown dataset '{args.ds}'. Use a number (1–4) or name: iris, wine, german, sonar.")
+                sys.exit(1)
 
     base = Path("results")
     if args.results_dir:
@@ -118,6 +137,14 @@ def main():
     groups = load_fronts(fronts_dir)
     if not groups:
         print(f"No *_front.csv files found in {fronts_dir}")
+        sys.exit(1)
+
+    if ds_filter is not None:
+        groups = {k: v for k, v in groups.items() if k[1] == ds_filter}
+    if args.nh is not None:
+        groups = {k: v for k, v in groups.items() if k[2] == args.nh}
+    if not groups:
+        print("No results match the given filters.")
         sys.exit(1)
 
     n = len(groups)

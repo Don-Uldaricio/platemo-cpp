@@ -10,12 +10,28 @@ TMPDIR=$RUN_DIR/tmp_runs
 CSVFILE=$RUN_DIR/results.csv
 CONVFILE=$RUN_DIR/convergence.csv
 
-ALGOS=(MOEACKF)
-DATASETS=(1 2 3 4)
+ALGOS=(MOEACKF SNSGAII)
+DATASETS=(1 2)
 NHIDDENS=(40)
-POPSIZE=150
-MAXFE=5000   # quick test default — use 20000-40000 for publication runs
+POPSIZE=100
 RUNS=3
+
+# maxFE por combinación algoritmo × dataset.
+# Convención de nombre: MAXFE_<ALGO>_<DS>
+# Razón: cada algo consume FEs en inicialización y cada dataset tiene distinto D
+# (número de features), lo que escala el tamaño del individuo y el costo por evaluación.
+# Si no existe la entrada específica se usa MAXFE_DEFAULT como fallback.
+MAXFE_DEFAULT=4000
+
+MAXFE_MOEACKF_1=15000
+MAXFE_MOEACKF_2=15000
+MAXFE_MOEACKF_3=8000
+MAXFE_MOEACKF_4=8000
+
+MAXFE_SNSGAII_1=15000
+MAXFE_SNSGAII_2=15000
+MAXFE_SNSGAII_3=8000
+MAXFE_SNSGAII_4=8000
 SEED=1
 JOBS=$(nproc)       # parallel processes — tune to number of physical cores
 WSCALE=20    # weight scale factor: pesos [0,1] × WSCALE antes de setWeights()
@@ -41,6 +57,21 @@ REFRAC=5.0          # PoissonEncoder refractory period (ms)
 # ─────────────────────────────────────────────────────────────────────────────
 
 SANITY_CHECK=false  # true: corre diagnóstico de configuraciones extremas antes de los jobs
+
+# ── Hiperparámetros por combinación (generado por extract_best_params.py) ─────
+# Si PARAMS_TABLE está seteada y apunta a un params_table.sh válido, se usan los
+# hiperparámetros óptimos por combinación; si no, se usan los defaults globales.
+PARAMS_TABLE="${PARAMS_TABLE:-}"
+
+# Función por defecto (devuelve vacío → fallback a defaults globales)
+get_params() { echo ''; }
+
+if [[ -n "$PARAMS_TABLE" && -f "$PARAMS_TABLE" ]]; then
+    # shellcheck source=/dev/null
+    source "$PARAMS_TABLE"
+    echo "Loaded per-combination params from: $PARAMS_TABLE"
+fi
+# ──────────────────────────────────────────────────────────────────────────────
 
 mkdir -p "$RUN_DIR" "$TMPDIR"
 rm -f "$TMPDIR"/*.csv
@@ -68,36 +99,38 @@ run_one() {
     local out="$TMPDIR/${algo}_ds${ds}_nh${nh}_run${run}.csv"
     local conv_out="$TMPDIR/${algo}_ds${ds}_nh${nh}_run${run}_conv.csv"
     local front_out="$TMPDIR/${algo}_ds${ds}_nh${nh}_run${run}_front.csv"
+    local varname="MAXFE_${algo}_${ds}"
+    local maxfe="${!varname:-$MAXFE_DEFAULT}"
 
+    # Use per-combination params from params_table.sh if available; else use globals.
+    local extra_params
+    extra_params=$(get_params "$algo" "$ds" "$nh" 2>/dev/null || true)
+    if [[ -z "$extra_params" ]]; then
+        extra_params="--disC $DISC --disM $DISM --proM $PROM --disSM $DISSM --proSM $PROSM \
+                      --sLower $SLOWER --sUpper $SUPPER --wscale $WSCALE \
+                      --dt $DT --encoding-duration $ENCODING_DUR --eval-duration $EVAL_DUR \
+                      --max-rate $MAX_RATE --refractory-period $REFRAC"
+    fi
+
+    # shellcheck disable=SC2086  # intentional word splitting on $extra_params (values are numbers)
     OMP_NUM_THREADS=1 "$BIN" \
         --algo     "$algo"     \
         --problem  SparseSNN   \
         --dataset  "$ds"       \
         --nhidden  "$nh"       \
         --popsize  "$POPSIZE"  \
-        --maxfe    "$MAXFE"    \
+        --maxfe    "$maxfe"    \
         --runs     1           \
         --seed     "$seed"     \
         --datapath "$DATAPATH" \
-        --wscale   "$WSCALE"   \
-        --disC     "$DISC"     \
-        --disM     "$DISM"     \
-        --proM     "$PROM"     \
-        --disSM    "$DISSM"    \
-        --proSM    "$PROSM"    \
-        --sLower   "$SLOWER"   \
-        --sUpper   "$SUPPER"   \
-        --dt                "$DT"           \
-        --encoding-duration "$ENCODING_DUR" \
-        --eval-duration     "$EVAL_DUR"     \
-        --max-rate          "$MAX_RATE"     \
-        --refractory-period "$REFRAC"       \
+        $extra_params          \
         --csv-out  "$out"      \
         --conv-out "$conv_out" \
         --out      "$front_out"
 }
-export -f run_one
-export BIN DATAPATH TMPDIR POPSIZE MAXFE WSCALE BASE_SEED=$SEED
+export -f run_one get_params
+export BIN DATAPATH TMPDIR POPSIZE MAXFE_DEFAULT WSCALE BASE_SEED=$SEED
+export "${!MAXFE_@}"    # exporta MAXFE_DEFAULT + todas las entradas MAXFE_<ALGO>_<DS>
 export DISC DISM PROM DISSM PROSM SLOWER SUPPER
 export DT ENCODING_DUR EVAL_DUR MAX_RATE REFRAC
 

@@ -12,10 +12,10 @@ NHIDDENS=(10 20 40)
 
 # ── Configuración por estudio ──────────────────────────────────────────────
 POPSIZE=50      # tamaño de población MOEA por trial interno
-MAXFE=5000      # evaluaciones máx por trial interno
-TRIALS=50       # trials Optuna por estudio
+MAXFE=1000      # evaluaciones máx por trial interno  (pruebas: 1000 | producción: 5000)
+TRIALS=10       # trials Optuna por estudio            (pruebas: 10   | producción: 50)
 MODE=discrete   # continuous | discrete
-TIMEOUT=7200    # segundos máx por trial (2h)
+TIMEOUT=300     # segundos máx por trial               (pruebas: 300  | producción: 7200)
 JOBS=$(nproc)   # estudios en paralelo — ajustá a núcleos físicos disponibles
 
 # ── Paths ──────────────────────────────────────────────────────────────────
