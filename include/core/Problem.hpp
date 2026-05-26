@@ -101,13 +101,23 @@ public:
         return FE < maxFE;
     }
 
+    // Registra el estado de la población inicial al finalizar la inicialización del algoritmo.
+    // Usa prob.FE real para que el eje X del CSV refleje el costo total de inicialización
+    // (p.ej. PriorAnalysis de MOEACKF consume 5D+N FEs antes de la primera generación).
+    // Avanza nextLogFE al primer checkpoint posterior a FE para evitar filas fuera de orden.
+    void LogInitial(const Population& pop) {
+        if (logInterval <= 0 || !onLog) return;
+        onLog(FE, pop);
+        while (nextLogFE <= FE) nextLogFE += logInterval;
+    }
+
     // Dispara el callback de logging si corresponde según el intervalo configurado.
-    // pop: población actual para pasar al callback.
-    // Puede dispararse múltiples veces si se saltaron varios checkpoints.
+    // Usa el FE del checkpoint (nextLogFE) como valor registrado, no el FE real actual,
+    // para evitar filas duplicadas cuando varios checkpoints se saltan en una misma generación.
     void MaybeLog(const Population& pop) {
         if (logInterval <= 0 || !onLog) return;
         while (nextLogFE > 0 && FE >= nextLogFE && nextLogFE <= maxFE) {
-            onLog(FE, pop);
+            onLog(nextLogFE, pop);
             nextLogFE += logInterval;
         }
     }

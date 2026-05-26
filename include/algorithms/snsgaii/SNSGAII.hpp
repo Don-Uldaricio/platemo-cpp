@@ -25,6 +25,8 @@ Population SNSGAII(Problem& prob, bool verbose = false,
     auto [pop, FrontNo, CrowdDis] = EnvironmentalSelection_NSGA2(Population_, prob.N);
     Population_ = pop;
 
+    prob.LogInitial(Population_);
+
     while (prob.NotTerminated(Population_)) {
         // Tournament selection — negate CrowdDis so higher diversity is preferred (NSGA-II semantics)
         std::vector<double> negCrowdDis(CrowdDis.size());

@@ -45,6 +45,8 @@ Population MOEACKF(Problem& prob, bool verbose = false,
     Matrix     Dec   = selInit.dec;
     MatrixB    Mask  = selInit.mask;
 
+    prob.LogInitial(pop);
+
     double rho = 0.5;
     std::vector<bool> NSV_prev, SV_prev;
 
