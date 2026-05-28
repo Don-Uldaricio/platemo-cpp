@@ -6,7 +6,6 @@
 #include "algorithms/moeackf/MOEACKF.hpp"
 #include "algorithms/snsgaii/SNSGAII.hpp"
 #include "metrics/HV.hpp"
-#include "metrics/IGD.hpp"
 #include "utils/Random.hpp"
 #include "utils/NDSort.hpp"
 
@@ -62,7 +61,7 @@ void printHelp(const char* prog) {
               << "  --datapath  <path>             Path to CSV data files (default: data)\n"
               << "  --out       <file>             Save Pareto front to CSV (optional)\n"
               << "  --csv-out   <file>             Append per-run metrics to CSV (optional)\n"
-              << "  --conv-out  <file>             Append per-checkpoint HV/IGD history to CSV (optional)\n"
+              << "  --conv-out  <file>             Append per-checkpoint HV history to CSV (optional)\n"
               << "  --log-interval <int>           FE interval between convergence snapshots (default: maxFE/10)\n"
               << "  --wscale    <float>            Weight scale factor applied at evaluation (default: 1.0)\n"
               << "  --sanity-check                 Evaluate extreme weight configs and exit (no GA run)\n"
@@ -93,8 +92,7 @@ void printHelp(const char* prog) {
               << "  f1: Network complexity (fraction of non-zero weights)\n"
               << "  f2: Training classification error\n"
               << "\nMetrics reported:\n"
-              << "  HV  (Hypervolume indicator, higher is better)\n"
-              << "  IGD (Inverted Generational Distance, lower is better)\n";
+              << "  HV  (Hypervolume indicator, higher is better)\n";
 }
 
 // Save Pareto front objectives + weight vectors to a CSV file.
@@ -218,7 +216,7 @@ int main(int argc, char* argv[]) {
               << "Data path : " << cfg.dataPath << "\n"
               << "============================================\n\n";
 
-    std::vector<double> hvVals, igdVals, timeVals;
+    std::vector<double> hvVals, timeVals;
 
     for (int run = 0; run < cfg.nRuns; run++) {
         unsigned runSeed = cfg.seed + run;
@@ -279,13 +277,12 @@ int main(int argc, char* argv[]) {
             prob.logInterval = (cfg.logInterval > 0) ? cfg.logInterval : cfg.maxFE / 10;
             prob.nextLogFE   = prob.logInterval;
             prob.onLog = [&](int fe, const Population& pop) {
-                double hv  = HV(pop, prob.optimum);
-                double igd = IGD(pop, prob.optimum);
+                double hv = HV(pop, prob.optimum);
                 std::ofstream f(cfg.convOutFile, std::ios::app);
                 if (!f.is_open()) return;
                 f.seekp(0, std::ios::end);
                 if (f.tellp() == 0)
-                    f << "algo,problem,dataset,nhidden,popsize,maxfe,run,seed,fe,hv,igd\n";
+                    f << "algo,problem,dataset,nhidden,popsize,maxfe,run,seed,fe,hv\n";
                 f << cfg.algorithm << ","
                   << cfg.problem   << ","
                   << cfg.dataNo    << ","
@@ -295,8 +292,7 @@ int main(int argc, char* argv[]) {
                   << (run + 1)     << ","
                   << runSeed       << ","
                   << fe            << ","
-                  << std::fixed << std::setprecision(6) << hv  << ","
-                  << igd           << "\n";
+                  << std::fixed << std::setprecision(6) << hv << "\n";
             };
         }
 
@@ -317,11 +313,9 @@ int main(int argc, char* argv[]) {
         double elapsed = std::chrono::duration<double>(tEnd - tStart).count();
 
         // Compute metrics
-        double hvScore  = HV(finalPop, prob.optimum);
-        double igdScore = IGD(finalPop, prob.optimum);
+        double hvScore = HV(finalPop, prob.optimum);
 
         hvVals.push_back(hvScore);
-        igdVals.push_back(igdScore);
         timeVals.push_back(elapsed);
 
         if (!cfg.csvOutFile.empty()) {
@@ -329,7 +323,7 @@ int main(int argc, char* argv[]) {
             if (csvf.is_open()) {
                 csvf.seekp(0, std::ios::end);
                 if (csvf.tellp() == 0)
-                    csvf << "algo,problem,dataset,nhidden,popsize,maxfe,run,seed,hv,igd,time_s\n";
+                    csvf << "algo,problem,dataset,nhidden,popsize,maxfe,run,seed,hv,time_s\n";
                 csvf << cfg.algorithm << ","
                      << cfg.problem   << ","
                      << cfg.dataNo    << ","
@@ -339,7 +333,6 @@ int main(int argc, char* argv[]) {
                      << (run + 1)     << ","
                      << runSeed       << ","
                      << std::fixed << std::setprecision(6) << hvScore << ","
-                     << igdScore      << ","
                      << std::setprecision(4) << elapsed    << "\n";
             }
         }
@@ -348,8 +341,7 @@ int main(int argc, char* argv[]) {
         std::cout << std::fixed << std::setprecision(6);
         std::cout << "  FE used : " << prob.FE << "\n"
                   << "  Time    : " << std::setprecision(2) << elapsed << " s\n"
-                  << "  HV      : " << std::setprecision(6) << hvScore  << "\n"
-                  << "  IGD     : " << igdScore  << "\n";
+                  << "  HV      : " << std::setprecision(6) << hvScore  << "\n";
 
         // Print Pareto front summary
         Population best = getBest(finalPop);
@@ -389,15 +381,13 @@ int main(int argc, char* argv[]) {
             return {mean, std::sqrt(var / v.size())};
         };
 
-        auto [hvMean, hvStd]   = stats(hvVals);
-        auto [igdMean, igdStd] = stats(igdVals);
-        auto [tMean, tStd]     = stats(timeVals);
+        auto [hvMean, hvStd] = stats(hvVals);
+        auto [tMean, tStd]   = stats(timeVals);
 
         std::cout << "============================================\n"
                   << "Summary over " << cfg.nRuns << " runs:\n"
                   << "  HV  mean±std: " << std::fixed << std::setprecision(6)
                   << hvMean << " ± " << hvStd << "\n"
-                  << "  IGD mean±std: " << igdMean << " ± " << igdStd << "\n"
                   << "  Time mean   : " << std::setprecision(2) << tMean << " s\n"
                   << "============================================\n";
     }

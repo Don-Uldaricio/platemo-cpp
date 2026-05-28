@@ -19,7 +19,7 @@ public:
     Vector lower;              // Bounds inferiores por variable, tamaño D
     Vector upper;              // Bounds superiores por variable, tamaño D
     std::vector<int> encoding; // Tipo de cada variable: 1=real, 2=entero, 3=label, 4=binario, 5=permutación
-    Matrix optimum;            // Puntos de referencia del frente óptimo, usado para calcular HV e IGD
+    Matrix optimum;            // Puntos de referencia del frente óptimo, usado para calcular HV
     std::chrono::steady_clock::time_point startTime;  // Tiempo de inicio, registrado en init()
 
     std::function<void(int, const Population&)> onLog;  // Callback opcional para loggear convergencia
@@ -89,7 +89,7 @@ public:
 
     // Retorna los puntos de referencia del frente de Pareto óptimo o ideal.
     // n: número de puntos de referencia a generar.
-    // Retorna: Matrix de referencia usada para calcular HV e IGD.
+    // Retorna: Matrix de referencia usada para calcular HV.
     virtual Matrix GetOptimum(int /*n*/) {
         if (M > 1) return Matrix::Ones(1, M);
         return Matrix::Zero(1, 1);

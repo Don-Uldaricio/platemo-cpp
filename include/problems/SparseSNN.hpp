@@ -201,9 +201,10 @@ private:
             "Dataset_NN_2.csv",
             "Dataset_NN_3.csv",
             "Dataset_NN_4.csv",
+            "Dataset_NN_5.csv",
         };
-        if (dataNo < 1 || dataNo > 4)
-            throw std::runtime_error("SparseSNN: dataNo must be 1-4");
+        if (dataNo < 1 || dataNo > 5)
+            throw std::runtime_error("SparseSNN: dataNo must be 1-5");
 
         std::string fname = dataPath + "/" + filenames[dataNo - 1];
         std::ifstream file(fname);
