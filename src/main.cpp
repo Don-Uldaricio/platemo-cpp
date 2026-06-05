@@ -8,6 +8,8 @@
 #include "metrics/HV.hpp"
 #include "utils/Random.hpp"
 #include "utils/NDSort.hpp"
+#include "encoding/poissonEncoder.hpp"
+#include "encoding/ttfsEncoder.hpp"
 
 #include <iostream>
 #include <iomanip>
@@ -34,6 +36,7 @@ struct RunConfig {
     std::string outFile;
     std::string csvOutFile;
     std::string convOutFile;
+    std::string spikesOutFile;  // CSV con spike counts del test set por solución del frente
     int logInterval = 0;
 
     // MOEA operator hyperparameters (tuneable via CLI / Bayesian optimization)
@@ -45,6 +48,15 @@ struct RunConfig {
     double evaluation_duration = 100.0;
     double max_rate            = 100.0;
     double refractory_period   = 5.0;
+
+    // SparseSNN binary fitness configuration
+    FitnessMode fitnessMode   = FitnessMode::ACCURACY;
+    int accuracyThreshold     = 1;
+    // false (default) → 1 output neuron (threshold/AUC); true → 2 output neurons (WTA)
+    bool twoOutputBinary      = false;
+
+    // Encoder de spikes
+    EncoderType encoderType   = EncoderType::POISSON;
 };
 
 void printHelp(const char* prog) {
@@ -80,6 +92,14 @@ void printHelp(const char* prog) {
               << "  --eval-duration       <float>  Total simulation window ms (default: 100.0)\n"
               << "  --max-rate            <float>  PoissonEncoder max firing rate Hz (default: 100.0)\n"
               << "  --refractory-period   <float>  PoissonEncoder refractory period ms (default: 5.0)\n"
+              << "  --encoder             <poisson|ttfs>  Spike encoder type (default: poisson)\n"
+              << "\nSparseSNN binary classification options (nClasses==2):\n"
+              << "  --binary-outputs <1|2>         Output neurons for binary tasks: 1=threshold/AUC (default), 2=WTA\n"
+              << "  --fitness-mode <accuracy|auc>  f2 metric: accuracy with fixed threshold or AUC (default: accuracy)\n"
+              << "                                 (only used when --binary-outputs 1)\n"
+              << "  --threshold    <int>           Spike threshold for --fitness-mode accuracy (default: 1)\n"
+              << "  --spikes-out   <file>          Save test-set spike counts per Pareto solution to CSV\n"
+              << "                                 (enables ROC/AUC plotting with plot_roc.py; only with --binary-outputs 1)\n"
               << "\nProblems:\n"
               << "  SparseNN  : Multi-layer ANN with backprop fine-tuning (baseline)\n"
               << "  SparseSNN : Spiking neural network (Izhikevich) evaluated via spike decoding\n"
@@ -137,15 +157,90 @@ void saveParetoFront(const Population& pop, const std::string& fname,
 
     std::ofstream mf(metaFname);
     if (mf.is_open()) {
+        std::string fmStr = (rcfg.fitnessMode == FitnessMode::AUC) ? "auc" : "accuracy";
         mf << "{\n"
-           << "  \"nFeatures\": " << nFeatures << ",\n"
-           << "  \"nHidden\": "   << nHidden   << ",\n"
-           << "  \"nOutputs\": "  << nOutputs  << ",\n"
-           << "  \"wScale\": "    << rcfg.wScale  << ",\n"
-           << "  \"dataNo\": "    << rcfg.dataNo  << ",\n"
-           << "  \"D\": "         << D             << "\n"
+           << "  \"nFeatures\": "   << nFeatures        << ",\n"
+           << "  \"nHidden\": "     << nHidden          << ",\n"
+           << "  \"nOutputs\": "    << nOutputs         << ",\n"
+           << "  \"wScale\": "      << rcfg.wScale      << ",\n"
+           << "  \"dataNo\": "      << rcfg.dataNo      << ",\n"
+           << "  \"D\": "           << D                << ",\n"
+           << "  \"fitness_mode\": \"" << fmStr        << "\"\n"
            << "}\n";
         std::cout << "  Metadata saved to:    " << metaFname << "\n";
+    }
+}
+
+// Evalúa el test set para cada solución del frente de Pareto y guarda spike counts a CSV.
+// Columnas: solution_id, f1_complexity, f2_train_metric, sample_id, spike_count, true_label
+// Solo para SparseSNN con nOutputs==1 (modo binario).
+void exportSpikeCountsCSV(
+    const Population& pop,
+    SparseSNN& prob,
+    const std::string& fname,
+    const RunConfig& rcfg)
+{
+    Population best = getBest(pop);
+    if (best.empty()) { std::cerr << "No feasible solutions for spikes export.\n"; return; }
+
+    auto [n, s] = prob.makeNetSim();
+
+    std::ofstream f(fname);
+    if (!f.is_open()) { std::cerr << "Cannot open " << fname << "\n"; return; }
+
+    f << "solution_id,f1_complexity,f2_train_metric,sample_id,spike_count,true_label\n";
+
+    std::set<std::pair<double,double>> seen;
+    int solId = 0;
+    for (const auto& sol : best) {
+        if (!seen.emplace(sol.obj(0), sol.obj(1)).second) continue;
+
+        std::vector<double> weights(prob.D);
+        for (int j = 0; j < prob.D; j++)
+            weights[j] = sol.dec(j) * rcfg.wScale;
+        s->setWeights(weights);
+
+        auto counts = s->collectSpikeCounts(prob.testDataset);
+        for (size_t i = 0; i < counts.size(); ++i) {
+            f << solId << ","
+              << std::setprecision(10) << sol.obj(0) << ","
+              << sol.obj(1) << ","
+              << i << ","
+              << counts[i] << ","
+              << prob.testDataset[i].second << "\n";
+        }
+        ++solId;
+    }
+
+    int T_max = static_cast<int>(
+        (rcfg.evaluation_duration - rcfg.encoding_duration) / rcfg.dt);
+
+    std::cout << "  Spike counts saved to: " << fname
+              << " (" << solId << " solutions, T_max=" << T_max << ")\n";
+
+    // Escribir T_max en el JSON de metadatos para que Python lo use
+    std::string metaFname = fname;
+    auto pos = metaFname.rfind("_spikes.csv");
+    if (pos != std::string::npos)
+        metaFname.replace(pos, 11, "_meta.json");
+    else
+        metaFname += ".meta.json";
+
+    // Si ya existe el _meta.json de saveParetoFront, abrir y añadir T_max;
+    // si no, crear uno nuevo con lo mínimo.
+    std::ofstream mf(metaFname);
+    if (mf.is_open()) {
+        mf << "{\n"
+           << "  \"nFeatures\": " << prob.nFeatures << ",\n"
+           << "  \"nHidden\": "   << prob.nHidden   << ",\n"
+           << "  \"nOutputs\": "  << prob.nOutputs  << ",\n"
+           << "  \"nClasses\": "  << prob.nClasses  << ",\n"
+           << "  \"wScale\": "    << rcfg.wScale    << ",\n"
+           << "  \"dataNo\": "    << rcfg.dataNo    << ",\n"
+           << "  \"T_max\": "     << T_max           << ",\n"
+           << "  \"D\": "         << prob.D          << "\n"
+           << "}\n";
+        std::cout << "  Metadata saved to:     " << metaFname << "\n";
     }
 }
 
@@ -200,6 +295,28 @@ int main(int argc, char* argv[]) {
         else if (arg == "--eval-duration"      && i+1 < argc) cfg.evaluation_duration = std::stod(argv[++i]);
         else if (arg == "--max-rate"           && i+1 < argc) cfg.max_rate            = std::stod(argv[++i]);
         else if (arg == "--refractory-period"  && i+1 < argc) cfg.refractory_period   = std::stod(argv[++i]);
+        else if (arg == "--encoder" && i+1 < argc) {
+            std::string enc = argv[++i];
+            if (enc == "poisson")       cfg.encoderType = EncoderType::POISSON;
+            else if (enc == "ttfs")     cfg.encoderType = EncoderType::TTFS;
+            else { std::cerr << "Unknown --encoder: " << enc << " (use poisson|ttfs)\n"; return 1; }
+        }
+        // SparseSNN binary fitness options
+        else if (arg == "--fitness-mode" && i+1 < argc) {
+            std::string fm = argv[++i];
+            if (fm == "auc")           cfg.fitnessMode = FitnessMode::AUC;
+            else if (fm == "accuracy") cfg.fitnessMode = FitnessMode::ACCURACY;
+            else { std::cerr << "Unknown --fitness-mode: " << fm << " (use accuracy|auc)\n"; return 1; }
+        }
+        else if (arg == "--threshold"       && i+1 < argc) cfg.accuracyThreshold = std::stoi(argv[++i]);
+        else if (arg == "--spikes-out"      && i+1 < argc) cfg.spikesOutFile     = argv[++i];
+        else if (arg == "--binary-outputs"  && i+1 < argc) {
+            int bo = std::stoi(argv[++i]);
+            if (bo != 1 && bo != 2) {
+                std::cerr << "--binary-outputs must be 1 or 2\n"; return 1;
+            }
+            cfg.twoOutputBinary = (bo == 2);
+        }
         else { std::cerr << "Unknown argument: " << arg << "\n"; printHelp(argv[0]); return 1; }
     }
 
@@ -215,6 +332,7 @@ int main(int argc, char* argv[]) {
               << "Runs      : " << cfg.nRuns << "\n"
               << "Seed base : " << cfg.seed << "\n"
               << "Data path : " << cfg.dataPath << "\n"
+              << "Encoder   : " << (cfg.encoderType == EncoderType::TTFS ? "ttfs" : "poisson") << "\n"
               << "============================================\n\n";
 
     std::vector<double> hvVals, timeVals;
@@ -238,6 +356,10 @@ int main(int argc, char* argv[]) {
             p->evaluation_duration= cfg.evaluation_duration;
             p->max_rate           = cfg.max_rate;
             p->refractory_period  = cfg.refractory_period;
+            p->twoOutputBinary    = cfg.twoOutputBinary;
+            p->fitnessMode        = cfg.fitnessMode;
+            p->accuracyThreshold  = cfg.accuracyThreshold;
+            p->encoderType        = cfg.encoderType;
             probPtr   = std::move(p);
         } else if (cfg.problem == "SparseNN") {
             auto p = std::make_unique<SparseNN>(cfg.dataNo, cfg.nHidden, cfg.dataPath);
@@ -370,6 +492,18 @@ int main(int argc, char* argv[]) {
                 nO = sp.nOutputs;
             }
             saveParetoFront(finalPop, cfg.outFile, cfg, nF, nH, nO);
+        }
+
+        // Export test-set spike counts for ROC/AUC analysis (SparseSNN binary only)
+        if (!cfg.spikesOutFile.empty() && run == cfg.nRuns - 1
+            && cfg.problem == "SparseSNN") {
+            auto& sp = static_cast<SparseSNN&>(prob);
+            if (sp.nOutputs == 1) {
+                exportSpikeCountsCSV(finalPop, sp, cfg.spikesOutFile, cfg);
+            } else {
+                std::cerr << "  --spikes-out skipped: not a binary problem (nOutputs="
+                          << sp.nOutputs << ")\n";
+            }
         }
     }
 

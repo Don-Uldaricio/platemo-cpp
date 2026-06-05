@@ -21,7 +21,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
-DS_NAMES = {1: "Iris", 2: "Wine", 3: "German", 4: "Sonar"}
+DS_NAMES = {1: "Statlog Australian", 2: "Climate", 3: "German", 4: "Sonar", 5: "Iris", 6: "Wine"}
 
 
 def pareto_filter(points: np.ndarray) -> np.ndarray:
@@ -55,7 +55,21 @@ def load_fronts(fronts_dir: Path) -> dict:
     return groups
 
 
-def plot_group(ax, key, runs, run_count, show_combined=False):
+def load_fitness_mode(fronts_dir: Path) -> str:
+    """Read fitness_mode from any _meta.json in fronts_dir (all runs share the same mode)."""
+    import json
+    for mf in fronts_dir.glob("*_meta.json"):
+        try:
+            with open(mf) as fp:
+                meta = json.load(fp)
+            if "fitness_mode" in meta:
+                return meta["fitness_mode"]
+        except Exception:
+            continue
+    return "accuracy"
+
+
+def plot_group(ax, key, runs, run_count, show_combined=False, fitness_mode="accuracy"):
     algo, ds, nh = key
     colors = cm.tab10(np.linspace(0, 0.9, run_count))
 
@@ -87,8 +101,9 @@ def plot_group(ax, key, runs, run_count, show_combined=False):
                 where="post", zorder=3)
 
     ax.set_title(f"{algo} | {DS_NAMES.get(ds, f'ds{ds}')} | nh={nh}", fontsize=9)
+    f2_label = "f2: 1 − AUC" if fitness_mode == "auc" else "f2: training error"
     ax.set_xlabel("f1: complexity (non-zero frac)", fontsize=8)
-    ax.set_ylabel("f2: training error", fontsize=8)
+    ax.set_ylabel(f2_label, fontsize=8)
     ax.set_xlim(-0.02, 1.02)
     ax.set_ylim(-0.02, 1.02)
     ax.grid(True, linestyle="--", alpha=0.4)
@@ -152,11 +167,13 @@ def main():
     nrows = (n + ncols - 1) // ncols
     fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 4.5 * nrows), squeeze=False)
 
+    fitness_mode = load_fitness_mode(fronts_dir)
     run_count = max(len(v) for v in groups.values())
     for idx, (key, runs) in enumerate(sorted(groups.items())):
         ax = axes[idx // ncols][idx % ncols]
         filtered = [(rid, pts) for rid, pts in runs if args.run is None or rid == args.run]
-        plot_group(ax, key, filtered, run_count, show_combined=args.combined)
+        plot_group(ax, key, filtered, run_count, show_combined=args.combined,
+                   fitness_mode=fitness_mode)
 
     # Hide unused subplots
     for idx in range(n, nrows * ncols):

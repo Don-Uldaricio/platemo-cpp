@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # run_bayesian_search_slurm.sh
-# Envía un SLURM array job de 24 tareas: una por (algo × dataset × nhidden).
+# Envía un SLURM array job de 8 tareas: una por (algo × dataset).
 # Cada tarea corre bayesian_search.py de forma independiente con su propia SQLite DB.
+# La arquitectura es un hiperparámetro interno al trial (no una dimensión de estudio).
+# Dentro de cada trial se evalúan múltiples nHidden (20, 100, 200) — HV medio.
 #
 # Uso:
 #   sbatch run_bayesian_search_slurm.sh
@@ -13,7 +15,7 @@
 # Para reanudar estudios interrumpidos, volver a ejecutar sbatch (load_if_exists=True).
 
 #SBATCH --job-name=snn_bo
-#SBATCH --array=0-23
+#SBATCH --array=0-7
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=2G
 #SBATCH --time=24:00:00
@@ -22,41 +24,19 @@
 
 set -euo pipefail
 
-# ── Tabla de combinaciones (índice = SLURM_ARRAY_TASK_ID 0-23) ─────────────
-#   Orden: SNSGAII × (ds1,2,3,4) × (nh10,20,40) luego MOEACKF × mismo orden
+# ── Tabla de combinaciones (índice = SLURM_ARRAY_TASK_ID 0-7) ──────────────
+#   Orden: SNSGAII × (ds1,2,3,4) luego MOEACKF × (ds1,2,3,4)
 ALGOS=(
-    SNSGAII SNSGAII SNSGAII
-    SNSGAII SNSGAII SNSGAII
-    SNSGAII SNSGAII SNSGAII
-    SNSGAII SNSGAII SNSGAII
-    MOEACKF MOEACKF MOEACKF
-    MOEACKF MOEACKF MOEACKF
-    MOEACKF MOEACKF MOEACKF
-    MOEACKF MOEACKF MOEACKF
+    SNSGAII SNSGAII SNSGAII SNSGAII
+    MOEACKF MOEACKF MOEACKF MOEACKF
 )
 DATASETS=(
-    1 1 1
-    2 2 2
-    3 3 3
-    4 4 4
-    1 1 1
-    2 2 2
-    3 3 3
-    4 4 4
-)
-NHIDDENS=(
-    10 20 40
-    10 20 40
-    10 20 40
-    10 20 40
-    10 20 40
-    10 20 40
-    10 20 40
-    10 20 40
+    1 2 3 4
+    1 2 3 4
 )
 
 # ── Configuración del estudio ──────────────────────────────────────────────
-POPSIZE=50
+POPSIZE=100    # debe coincidir con run_bayesian_search.sh
 MAXFE=5000
 TRIALS=50
 MODE=discrete
@@ -72,12 +52,11 @@ mkdir -p "$OUTDIR"
 TASK=${SLURM_ARRAY_TASK_ID:-0}
 ALGO=${ALGOS[$TASK]}
 DS=${DATASETS[$TASK]}
-NH=${NHIDDENS[$TASK]}
 
-STUDY="snn_bo_${ALGO}_ds${DS}_nh${NH}"
+STUDY="snn_bo_${ALGO}_ds${DS}"
 STORAGE="sqlite:///${OUTDIR}/${STUDY}.db"
 
-echo "Task $TASK: $ALGO | dataset=$DS | nhidden=$NH"
+echo "Task $TASK: $ALGO | dataset=$DS"
 echo "Study   : $STUDY"
 echo "Storage : $STORAGE"
 echo "Output  : $OUTDIR"
@@ -86,7 +65,6 @@ echo "Output  : $OUTDIR"
 python "$SCRIPT_DIR/bayesian_search.py" \
     --algo      "$ALGO"     \
     --dataset   "$DS"       \
-    --nhidden   "$NH"       \
     --popsize   "$POPSIZE"  \
     --maxfe     "$MAXFE"    \
     --trials    "$TRIALS"   \

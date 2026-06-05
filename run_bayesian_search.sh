@@ -1,18 +1,27 @@
 #!/usr/bin/env bash
 # run_bayesian_search.sh
-# Lanza un estudio Optuna independiente por cada combinación (algo × dataset × nhidden)
+# Lanza un estudio Optuna independiente por cada combinación (algo × dataset × arquitectura)
 # usando GNU parallel. Cada estudio tiene su propia SQLite DB → sin contención de escritura.
 # Retomar estudios interrumpidos: simplemente volver a ejecutar el script (load_if_exists=True).
+#
+# Arquitecturas disponibles:
+#   1 — ROC/AUC + 1 output neuron + Poisson encoder + threshold decoder
+#   2 — Accuracy + 2 output neurons + Poisson encoder + classification (WTA) decoder
+#   3 — Accuracy + 2 output neurons + TTFS encoder + classification (WTA) decoder
+#
+# Dentro de cada trial, el script Python evalúa el candidato con múltiples nHidden
+# (20, 100, 200) y retorna el HV medio — los hiperparámetros elegidos son robustos
+# a distintos tamaños de red oculta.
 set -euo pipefail
 
 # ── Combinatorias a explorar ───────────────────────────────────────────────
 ALGOS=(SNSGAII MOEACKF)
 DATASETS=(1 2 3 4)
-NHIDDENS=(10 20 40)
+# La arquitectura es un hiperparámetro dentro de cada trial (no una dimensión de estudio).
 
 # ── Configuración por estudio ──────────────────────────────────────────────
-POPSIZE=50      # tamaño de población MOEA por trial interno
-MAXFE=1000      # evaluaciones máx por trial interno  (pruebas: 1000 | producción: 5000)
+POPSIZE=100      # tamaño de población MOEA por trial interno
+MAXFE=2000      # evaluaciones máx por trial interno  (pruebas: 1000 | producción: 5000)
 TRIALS=10       # trials Optuna por estudio            (pruebas: 10   | producción: 50)
 MODE=discrete   # continuous | discrete
 TIMEOUT=300     # segundos máx por trial               (pruebas: 300  | producción: 7200)
@@ -27,15 +36,14 @@ mkdir -p "$OUTDIR"
 
 # ── Función por estudio ────────────────────────────────────────────────────
 run_one_study() {
-    local algo=$1 ds=$2 nh=$3
-    local study_name="snn_bo_${algo}_ds${ds}_nh${nh}"
+    local algo=$1 ds=$2
+    local study_name="snn_bo_${algo}_ds${ds}"
     local storage="sqlite:///${OUTDIR}/${study_name}.db"
     local logfile="${OUTDIR}/${study_name}.log"
 
     "$VENV" "$SCRIPT_DIR/bayesian_search.py" \
         --algo      "$algo"        \
         --dataset   "$ds"          \
-        --nhidden   "$nh"          \
         --popsize   "$POPSIZE"     \
         --maxfe     "$MAXFE"       \
         --trials    "$TRIALS"      \
@@ -49,8 +57,8 @@ run_one_study() {
     local exit_code=$?
     if [[ $exit_code -eq 0 ]]; then
         local best_hv
-        best_hv=$(grep -oP '^\s+HV = \K[\d.eE+\-]+' "$logfile" | tail -1)
-        echo "DONE  $study_name  HV=${best_hv:-N/A}"
+        best_hv=$(grep -oP '^\s+Mean HV = \K[\d.eE+\-]+' "$logfile" | tail -1)
+        echo "DONE  $study_name  mean_HV=${best_hv:-N/A}"
     else
         echo "FAIL  $study_name  (exit $exit_code) → see $logfile"
     fi
@@ -59,18 +67,19 @@ export -f run_one_study
 export VENV SCRIPT_DIR POPSIZE MAXFE TRIALS MODE TIMEOUT OUTDIR
 
 # ── Lanzamiento ────────────────────────────────────────────────────────────
-total=$(( ${#ALGOS[@]} * ${#DATASETS[@]} * ${#NHIDDENS[@]} ))
+total=$(( ${#ALGOS[@]} * ${#DATASETS[@]} ))
 echo "Output directory : $OUTDIR"
-echo "Studies          : $total  (${#ALGOS[@]} algos × ${#DATASETS[@]} datasets × ${#NHIDDENS[@]} nhiddens)"
+echo "Studies          : $total  (${#ALGOS[@]} algos × ${#DATASETS[@]} datasets)"
 echo "Parallel jobs    : $JOBS"
 echo "Trials per study : $TRIALS  (MAXFE=$MAXFE, POPSIZE=$POPSIZE, mode=$MODE)"
+echo "Arquitectura     : hiperparámetro por trial (1=AUC/Poisson, 2=Acc/Poisson, 3=Acc/TTFS)"
+echo "nHidden por trial: 20, 100, 200 (HV medio — robusto a tamaño de red)"
 echo ""
 
 parallel --jobs "$JOBS" --bar \
-    run_one_study {1} {2} {3} \
-    ::: "${ALGOS[@]}"   \
-    ::: "${DATASETS[@]}" \
-    ::: "${NHIDDENS[@]}"
+    run_one_study {1} {2} \
+    ::: "${ALGOS[@]}"     \
+    ::: "${DATASETS[@]}"
 
 # ── Resumen ────────────────────────────────────────────────────────────────
 echo ""

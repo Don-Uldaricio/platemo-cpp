@@ -5,6 +5,7 @@
 #include "core/network.hpp"
 #include "core/simulator.hpp"
 #include "encoding/poissonEncoder.hpp"
+#include "encoding/ttfsEncoder.hpp"
 
 #include <fstream>
 #include <iomanip>
@@ -21,16 +22,35 @@
 // Multi-objective optimization of a spiking neural network on classification tasks.
 // Objectives (both minimized):
 //   f1 = fraction of active (non-zero) synaptic weights  [sparsity]
-//   f2 = training classification error                   [1 - accuracy]
+//   f2 = training classification error / 1-AUC           [configurable]
 //
 // Decision variables: one weight per synapse in [0, 1].
 // Zero weight = inactive synapse (contributes to sparsity).
 //
 // Topology: fully-connected, no recurrence.
-//   (nFeatures+1) input+bias -> nHidden hidden neurons -> nClasses output neurons
-//   D = (nFeatures+1)*nHidden + (nHidden+1)*nOutputs synapses (all excitatory).
+//   (nFeatures+1) input+bias_h -> nHidden hidden neurons -> nOutputs output neurons
+//   bias_h only connects to the hidden layer (no direct bias to output) to prevent
+//   the majority-class shortcut where a sparse network trivially predicts one class.
+//   For binary problems (nClasses==2):
+//     twoOutputBinary=false (default): nOutputs=1 (threshold/AUC-based decoding).
+//     twoOutputBinary=true           : nOutputs=2 (winner-take-all, same as multiclass).
+//   For multiclass: nOutputs=nClasses (winner-take-all decoding).
+//   D = (nFeatures+1)*nHidden + nHidden*nOutputs synapses (all excitatory).
 //
 // Input normalization: min-max to [0,1] so RateEncoder receives valid inputs.
+
+// Métrica de segundo objetivo para el modo binario (nOutputs==1).
+enum class FitnessMode {
+    ACCURACY,  // f2 = 1 - accuracy(threshold=accuracyThreshold); ROC/AUC solo post-hoc
+    AUC        // f2 = 1 - AUC (barre thresholds 1..T_max durante la optimización)
+};
+
+// Tipo de encoder de spikes a usar en la SNN.
+enum class EncoderType {
+    POISSON,  // PoissonEncoder: tasa estocástica proporcional al valor de entrada
+    TTFS      // TTFSEncoder: time-to-first-spike, un spike por neurona cuyo tiempo codifica el valor
+};
+
 class SparseSNN : public Problem {
 public:
     int dataNo   = 1;
@@ -50,8 +70,21 @@ public:
     double max_rate            = 100.0; // PoissonEncoder max firing rate (Hz)
     double refractory_period   = 5.0;   // PoissonEncoder refractory period (ms)
 
-    // Training dataset for evaluateAccuracy(): (normalized_input, 0-indexed label)
+    // Salidas para clasificación binaria (nClasses==2):
+    //   false (default) → nOutputs=1, decodificación por umbral / AUC.
+    //   true            → nOutputs=2, decodificación WTA igual que multiclase.
+    bool twoOutputBinary = false;
+
+    // Configuración de métrica para modo binario (nOutputs==1)
+    FitnessMode fitnessMode    = FitnessMode::ACCURACY;
+    int accuracyThreshold      = 1;  // umbral fijo cuando fitnessMode == ACCURACY
+
+    // Encoder de spikes — selecciona entre Poisson y TTFS
+    EncoderType encoderType    = EncoderType::POISSON;
+
+    // Training dataset (80%) and test dataset (20%)
     std::vector<std::pair<std::vector<double>, int>> trainDataset;
+    std::vector<std::pair<std::vector<double>, int>> testDataset;
 
     SparseSNN(int dataNo_ = 1, int nHidden_ = 20,
               const std::string& dataPath_ = "data")
@@ -63,7 +96,7 @@ public:
         loadData();
 
         M = 2;
-        D = (nFeatures + 1) * nHidden + (nHidden + 1) * nOutputs;
+        D = (nFeatures + 1) * nHidden + nHidden * nOutputs;
         lower    = Vector::Constant(D, 0.0);
         upper    = Vector::Constant(D, 1.0);
         encoding.assign(D, 1);  // all real
@@ -94,7 +127,10 @@ public:
 
     // Calcula los dos objetivos para cada solución simulando la SNN en paralelo con OpenMP.
     //   f1 (obj 0) = fracción de pesos activos (> 0) [complejidad].
-    //   f2 (obj 1) = 1 - accuracy sobre el training set [error de clasificación].
+    //   f2 (obj 1) = métrica de error configurable:
+    //     - nOutputs > 1 (multiclase): 1 - accuracy  (WTA)
+    //     - nOutputs == 1 (binario), fitnessMode==ACCURACY: 1 - accuracy(threshold=accuracyThreshold)
+    //     - nOutputs == 1 (binario), fitnessMode==AUC:      1 - AUC
     // Cada thread usa su propio Simulator del pool para evitar condiciones de carrera.
     // dec: Matrix n x D con los pesos a evaluar.
     // Retorna: Matrix n x 2 con [complejidad, error] por fila.
@@ -116,8 +152,19 @@ public:
             obj(i, 0) = static_cast<double>(nzCount) / D;
 
             sim_pool[tid]->setWeights(weights);
-            double acc = sim_pool[tid]->evaluateAccuracy(trainDataset);
-            obj(i, 1) = 1.0 - acc;
+
+            double f2;
+            if (nOutputs == 1) {
+                if (fitnessMode == FitnessMode::AUC) {
+                    f2 = 1.0 - sim_pool[tid]->evaluateAUC(trainDataset);
+                } else {
+                    f2 = 1.0 - sim_pool[tid]->evaluateAccuracyWithThreshold(
+                             trainDataset, accuracyThreshold);
+                }
+            } else {
+                f2 = 1.0 - sim_pool[tid]->evaluateAccuracy(trainDataset);
+            }
+            obj(i, 1) = f2;
         }
         return obj;
     }
@@ -255,7 +302,7 @@ private:
         std::set<double> catSet(labelRaw.begin(), labelRaw.end());
         std::vector<double> cats(catSet.begin(), catSet.end());
         nClasses = static_cast<int>(cats.size());
-        nOutputs = nClasses;
+        nOutputs = (nClasses == 2 && !twoOutputBinary) ? 1 : nClasses;
 
         std::vector<int> labels(totalSamples);
         for (int i = 0; i < totalSamples; i++)
@@ -271,14 +318,23 @@ private:
         for (int i = 0; i < trainSize; i++) {
             auto inp = inputs[i];
             inp.push_back(1.0);  // bias for hidden layer (always active)
-            inp.push_back(1.0);  // bias for output layer (always active)
             trainDataset.emplace_back(std::move(inp), labels[i]);
+        }
+
+        testDataset.clear();
+        testDataset.reserve(totalSamples - trainSize);
+        for (int i = trainSize; i < totalSamples; i++) {
+            auto inp = inputs[i];
+            inp.push_back(1.0);
+            testDataset.emplace_back(std::move(inp), labels[i]);
         }
     }
 
+public:
     // Construye un par (Network, Simulator) con la topología de la SNN.
-    // Topología: nFeatures neuronas de entrada + 2 bias (uno para capa oculta, otro para salida)
+    // Topología: nFeatures neuronas de entrada + 1 bias (solo para capa oculta)
     //            → nHidden neuronas ocultas → nOutputs neuronas de salida.
+    // No hay bias directo a la capa de salida para evitar el shortcut de clase mayoritaria.
     // Todas las sinapsis son excitatorias con peso inicial 0.0 (se asignan con setWeights()).
     // Configuración de simulación: dt=1ms, encoding_duration=50ms, evaluation_duration=100ms.
     // Encoder: PoissonEncoder con max 100 Hz.
@@ -295,15 +351,14 @@ private:
         for (int i = 0; i < nFeatures; i++)
             n->addInputNeuron(NeuronType::REGULAR_SPIKING);
         int bias_h_id = n->addInputNeuron(NeuronType::REGULAR_SPIKING);  // ID nFeatures
-        int bias_o_id = n->addInputNeuron(NeuronType::REGULAR_SPIKING);  // ID nFeatures+1
 
         for (int h = 0; h < nHidden; h++)
             n->addHiddenNeuron(NeuronType::REGULAR_SPIKING);
         for (int o = 0; o < nOutputs; o++)
             n->addOutputNeuron(NeuronType::REGULAR_SPIKING);
 
-        int firstHidden = nFeatures + 2;
-        int firstOutput = nFeatures + 2 + nHidden;
+        int firstHidden = nFeatures + 1;
+        int firstOutput = nFeatures + 1 + nHidden;
 
         // Layer 1: (nFeatures+1) inputs+bias → nHidden hidden
         for (int h = 0; h < nHidden; h++) {
@@ -311,15 +366,18 @@ private:
                 n->addSynapse(i, firstHidden + h, true, 0.0);
             n->addSynapse(bias_h_id, firstHidden + h, true, 0.0);
         }
-        // Layer 2: nHidden hidden + bias → nOutputs output
+        // Layer 2: nHidden hidden → nOutputs output (sin bias directo a salida)
         for (int o = 0; o < nOutputs; o++) {
             for (int h = 0; h < nHidden; h++)
                 n->addSynapse(firstHidden + h, firstOutput + o, true, 0.0);
-            n->addSynapse(bias_o_id, firstOutput + o, true, 0.0);
         }
 
         auto s = std::make_unique<Simulator>(n.get(), cfg);
-        s->setEncoder(std::make_unique<PoissonEncoder>(max_rate, true, refractory_period));
+        if (encoderType == EncoderType::TTFS) {
+            s->setEncoder(std::make_unique<TTFSEncoder>(TTFSEncoder::Mapping::LINEAR));
+        } else {
+            s->setEncoder(std::make_unique<PoissonEncoder>(max_rate, true, refractory_period));
+        }
         return {std::move(n), std::move(s)};
     }
 

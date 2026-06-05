@@ -11,10 +11,10 @@ CSVFILE=$RUN_DIR/results.csv
 CONVFILE=$RUN_DIR/convergence.csv
 
 ALGOS=(MOEACKF SNSGAII)
-DATASETS=(1 2)
-NHIDDENS=(40)
+DATASETS=(1 2 3 4)
+NHIDDENS=(20)
 POPSIZE=100
-RUNS=3
+RUNS=6
 
 # maxFE por combinación algoritmo × dataset.
 # Convención de nombre: MAXFE_<ALGO>_<DS>
@@ -23,37 +23,54 @@ RUNS=3
 # Si no existe la entrada específica se usa MAXFE_DEFAULT como fallback.
 MAXFE_DEFAULT=4000
 
-MAXFE_MOEACKF_1=15000
-MAXFE_MOEACKF_2=15000
-MAXFE_MOEACKF_3=8000
-MAXFE_MOEACKF_4=8000
+MAXFE_MOEACKF_1=5000
+MAXFE_MOEACKF_2=10000
+MAXFE_MOEACKF_3=10000
+MAXFE_MOEACKF_4=10000
+MAXFE_MOEACKF_5=5000
+MAXFE_MOEACKF_6=5000
 
-MAXFE_SNSGAII_1=15000
-MAXFE_SNSGAII_2=15000
-MAXFE_SNSGAII_3=8000
-MAXFE_SNSGAII_4=8000
-SEED=1
+MAXFE_SNSGAII_1=5000
+MAXFE_SNSGAII_2=10000
+MAXFE_SNSGAII_3=10000
+MAXFE_SNSGAII_4=10000
+MAXFE_SNSGAII_5=5000
+MAXFE_SNSGAII_6=5000
+SEED=50
 JOBS=$(nproc)       # parallel processes — tune to number of physical cores
-WSCALE=20    # weight scale factor: pesos [0,1] × WSCALE antes de setWeights()
+# JOBS=6      # parallel processes — tune to number of physical cores
+WSCALE=15    # weight scale factor: pesos [0,1] × WSCALE antes de setWeights()
              # con el modelo Izhikevich se necesita WSCALE ≥ 10 para que las neuronas disparen
 
 # ── Hiperparámetros optimizados por Bayesian search ──────────────────────────
 # Reemplazá los valores con los de bayesian_search.py → "Best trial"
 # MOEA operators
-DISC=20.0     # SBX distribution index
-DISM=20.0     # polynomial mutation distribution index
-PROM=1.0      # polynomial mutation probability multiplier (tasa real = PROM/D por gen)
+DISC=10.0     # SBX distribution index
+DISM=10.0     # polynomial mutation distribution index
+PROM=1.5      # polynomial mutation probability multiplier (tasa real = PROM/D por gen)
 DISSM=20.0    # sparsity mutation distribution index
 PROSM=1.0     # sparsity mutation probability multiplier
-SLOWER=0.75   # VSSPS minimum sparsity (min fracción de ceros en inicialización)
+SLOWER=0.5   # VSSPS minimum sparsity (min fracción de ceros en inicialización)
 SUPPER=1.0    # VSSPS maximum sparsity
 
 # SNN simulation timing
 DT=1.0              # timestep (ms)
-ENCODING_DUR=50.0   # ventana de codificación Poisson (ms)
-EVAL_DUR=100.0      # ventana total de simulación (ms); debe ser > ENCODING_DUR
+ENCODING_DUR=75.0   # ventana de codificación Poisson (ms)
+EVAL_DUR=150.0      # ventana total de simulación (ms); debe ser > ENCODING_DUR
 MAX_RATE=100.0      # PoissonEncoder max firing rate (Hz)
-REFRAC=5.0          # PoissonEncoder refractory period (ms)
+REFRAC=3.0          # PoissonEncoder refractory period (ms)
+
+# SparseSNN binary classification (solo aplica cuando nClasses==2, es decir datasets 1-5)
+# T_max = floor((EVAL_DUR - ENCODING_DUR) / DT) = 50 con los defaults actuales
+BINARY_OUTPUTS=1        # 1 → 1 neurona de salida, decodificación por umbral / AUC (default)
+                        # 2 → 2 neuronas de salida, decodificación WTA (igual que multiclase)
+FITNESS_MODE=auc   # "accuracy" → f2 = 1-accuracy(threshold=ACCURACY_THRESHOLD)
+                        # "auc"      → f2 = 1-AUC (barre umbrales 1..T_max)
+                        # (solo aplica cuando BINARY_OUTPUTS=1)
+ACCURACY_THRESHOLD=1    # umbral fijo de spikes usado cuando FITNESS_MODE=accuracy
+SAVE_SPIKES=true       # true → guarda _spikes.csv con spike counts del test set
+                        #        (necesario para graficar ROC/AUC con plot_roc.py)
+                        #        (solo aplica cuando BINARY_OUTPUTS=1)
 # ─────────────────────────────────────────────────────────────────────────────
 
 SANITY_CHECK=false  # true: corre diagnóstico de configuraciones extremas antes de los jobs
@@ -99,6 +116,7 @@ run_one() {
     local out="$TMPDIR/${algo}_ds${ds}_nh${nh}_run${run}.csv"
     local conv_out="$TMPDIR/${algo}_ds${ds}_nh${nh}_run${run}_conv.csv"
     local front_out="$TMPDIR/${algo}_ds${ds}_nh${nh}_run${run}_front.csv"
+    local spikes_out="$TMPDIR/${algo}_ds${ds}_nh${nh}_run${run}_spikes.csv"
     local varname="MAXFE_${algo}_${ds}"
     local maxfe="${!varname:-$MAXFE_DEFAULT}"
 
@@ -109,10 +127,16 @@ run_one() {
         extra_params="--disC $DISC --disM $DISM --proM $PROM --disSM $DISSM --proSM $PROSM \
                       --sLower $SLOWER --sUpper $SUPPER --wscale $WSCALE \
                       --dt $DT --encoding-duration $ENCODING_DUR --eval-duration $EVAL_DUR \
-                      --max-rate $MAX_RATE --refractory-period $REFRAC"
+                      --max-rate $MAX_RATE --refractory-period $REFRAC \
+                      --binary-outputs $BINARY_OUTPUTS \
+                      --fitness-mode $FITNESS_MODE --threshold $ACCURACY_THRESHOLD"
     fi
 
-    # shellcheck disable=SC2086  # intentional word splitting on $extra_params (values are numbers)
+    # Spike counts para ROC/AUC (solo binario: nClasses==2, datasets 1-5)
+    local spikes_flag=""
+    [[ "$SAVE_SPIKES" == "true" ]] && spikes_flag="--spikes-out $spikes_out"
+
+    # shellcheck disable=SC2086  # intentional word splitting on $extra_params y $spikes_flag
     OMP_NUM_THREADS=1 "$BIN" \
         --algo     "$algo"     \
         --problem  SparseSNN   \
@@ -126,13 +150,15 @@ run_one() {
         $extra_params          \
         --csv-out  "$out"      \
         --conv-out "$conv_out" \
-        --out      "$front_out"
+        --out      "$front_out" \
+        $spikes_flag
 }
 export -f run_one get_params
 export BIN DATAPATH TMPDIR POPSIZE MAXFE_DEFAULT WSCALE BASE_SEED=$SEED
 export "${!MAXFE_@}"    # exporta MAXFE_DEFAULT + todas las entradas MAXFE_<ALGO>_<DS>
 export DISC DISM PROM DISSM PROSM SLOWER SUPPER
 export DT ENCODING_DUR EVAL_DUR MAX_RATE REFRAC
+export BINARY_OUTPUTS FITNESS_MODE ACCURACY_THRESHOLD SAVE_SPIKES
 
 total=$(( ${#ALGOS[@]} * ${#DATASETS[@]} * ${#NHIDDENS[@]} * RUNS ))
 echo "Output directory: $RUN_DIR"
@@ -147,10 +173,10 @@ parallel --jobs "$JOBS" --bar \
 
 # Merge results
 echo "Merging results..."
-first=$(ls "$TMPDIR"/*_run*.csv | grep -v '_conv\|_front' | head -1)
+first=$(ls "$TMPDIR"/*_run*.csv | grep -v '_conv\|_front\|_spikes' | head -1)
 head -1 "$first" > "$CSVFILE"
 for f in "$TMPDIR"/*.csv; do
-    [[ "$f" == *_conv.csv || "$f" == *_front.csv ]] && continue
+    [[ "$f" == *_conv.csv || "$f" == *_front.csv || "$f" == *_spikes.csv ]] && continue
     tail -n +2 "$f"
 done >> "$CSVFILE"
 
@@ -165,10 +191,10 @@ if [[ -n "$first_conv" ]]; then
     echo "Conv rows written: $(( $(wc -l < "$CONVFILE") - 1 ))"
 fi
 
-# Move Pareto front files and metadata out before cleanup
+# Move Pareto front files, spike counts and metadata out before cleanup
 FRONTSDIR=$RUN_DIR/fronts
 mkdir -p "$FRONTSDIR"
-for f in "$TMPDIR"/*_front.csv "$TMPDIR"/*_meta.json; do
+for f in "$TMPDIR"/*_front.csv "$TMPDIR"/*_spikes.csv "$TMPDIR"/*_meta.json; do
     [[ -f "$f" ]] && mv "$f" "$FRONTSDIR/"
 done
 

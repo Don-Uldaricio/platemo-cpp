@@ -46,7 +46,7 @@ def load_meta(csv_path: Path) -> dict:
         nHidden = int(m.group(2))
         nFeatures = ds_features.get(dataNo, 0)
         nOutputs  = 2  # all bundled datasets are binary
-        D = (nFeatures + 1) * nHidden + (nHidden + 1) * nOutputs
+        D = (nFeatures + 1) * nHidden + nHidden * nOutputs
         print(f"[warn] No _meta.json found; inferred topology from filename "
               f"(nFeatures={nFeatures}, nHidden={nHidden}, nOutputs={nOutputs})")
         return {"nFeatures": nFeatures, "nHidden": nHidden, "nOutputs": nOutputs,
@@ -91,7 +91,7 @@ def reconstruct_matrices(w: np.ndarray, meta: dict):
     W1 = w[:L1].reshape(nH, nF + 1)
 
     # Layer 2: output o receives weights from hiddens + bias_o
-    W2 = w[L1:].reshape(nO, nH + 1)
+    W2 = w[L1:].reshape(nO, nH)
 
     return W1, W2
 
@@ -170,7 +170,7 @@ def plot_solution(objs: np.ndarray, weights: np.ndarray, meta: dict,
     # ── 3. W2 heatmap (magnitudes) ────────────────────────────────────────────
     ax2 = fig.add_subplot(gs[0, 3])
     im2 = ax2.imshow(W2, aspect="auto", cmap="viridis", interpolation="nearest")
-    ax2.set_title(f"W2: hidden→output  ({nO}×{nH+1})  active={active_W2}/{W2.size}", fontsize=9)
+    ax2.set_title(f"W2: hidden→output  ({nO}×{nH})  active={active_W2}/{W2.size}", fontsize=9)
     ax2.set_xlabel("Hidden neuron (/ bias)", fontsize=8)
     ax2.set_ylabel("Output class", fontsize=8)
     ax2.set_yticks(range(nO))
@@ -199,7 +199,7 @@ def plot_solution(objs: np.ndarray, weights: np.ndarray, meta: dict,
 
     # Per-hidden-neuron: how many inputs it receives (in-degree W1)
     in_deg_hidden = (W1 > 0).sum(axis=1)   # shape (nH,)
-    out_deg_hidden = (W2 > 0).sum(axis=0)[:nH]  # shape (nH,), exclude bias col
+    out_deg_hidden = (W2 > 0).sum(axis=0)        # shape (nH,)
 
     stats_text = (
         f"Dataset:    {ds_name}\n"
@@ -248,7 +248,7 @@ def plot_solution(objs: np.ndarray, weights: np.ndarray, meta: dict,
 def _neuron_status(W1: np.ndarray, W2: np.ndarray, nH: int):
     """Classify each hidden neuron: 0=live, 1=dead, 2=sink (no output), 3=source (no input)."""
     has_in  = (W1 > 0).any(axis=1)              # (nH,)
-    has_out = (W2[:, :nH] > 0).any(axis=0)      # (nH,)
+    has_out = (W2 > 0).any(axis=0)               # (nH,)
     status = np.where(has_in & has_out,   0,
               np.where(~has_in & ~has_out, 1,
               np.where(has_in & ~has_out,  2,
@@ -287,21 +287,17 @@ def plot_network_graph(W1: np.ndarray, W2: np.ndarray, meta: dict,
         y_h   = np.linspace(1.0, 0.0, nH)
         y_out = np.array([0.5]) if nO == 1 else np.linspace(0.75, 0.25, nO)
 
-        w1_max = W1.max() if W1.max() > 0 else 1.0
         for h in range(nH):
             for i in range(n_in):
                 if W1[h, i] > 0:
-                    alpha = 0.04 + 0.35 * (W1[h, i] / w1_max)
                     ax.plot([0.15, 0.50], [y_in[i], y_h[h]],
-                            color="steelblue", alpha=alpha, lw=0.4, zorder=1)
+                            color="black", lw=0.4, zorder=1)
 
-        w2_max = W2.max() if W2.max() > 0 else 1.0
         for o in range(nO):
             for h in range(nH):
                 if W2[o, h] > 0:
-                    alpha = 0.04 + 0.35 * (W2[o, h] / w2_max)
                     ax.plot([0.50, 0.85], [y_h[h], y_out[o]],
-                            color="darkorange", alpha=alpha, lw=0.4, zorder=1)
+                            color="black", lw=0.4, zorder=1)
 
         node_colors_h = [s_colors[s] for s in status]
         ax.scatter([0.15] * n_in, y_in,  s=40,  c="cornflowerblue",
@@ -367,7 +363,7 @@ def plot_network_graph(W1: np.ndarray, W2: np.ndarray, meta: dict,
         ax2.legend(fontsize=7)
 
         # 3. Out-degree histogram (W2: active outputs per hidden neuron)
-        out_deg = (W2[:, :nH] > 0).sum(axis=0)
+        out_deg = (W2 > 0).sum(axis=0)
         ax3 = fig.add_subplot(gs2[1, 1])
         ax3.hist(out_deg, bins=min(20, nO + 2), color="darkorange",
                  edgecolor="white", linewidth=0.3)
@@ -380,7 +376,7 @@ def plot_network_graph(W1: np.ndarray, W2: np.ndarray, meta: dict,
 
         # 4. Reachability matrix: reach[o, i] = # hidden neurons h with W1[h,i]>0 AND W2[o,h]>0
         W1_act = (W1 > 0).astype(float)           # (nH, nF+1)
-        W2_act = (W2[:, :nH] > 0).astype(float)   # (nO, nH)
+        W2_act = (W2 > 0).astype(float)            # (nO, nH)
         reach  = W2_act @ W1_act                   # (nO, nF+1)
 
         ax4 = fig.add_subplot(gs2[0, 1])
