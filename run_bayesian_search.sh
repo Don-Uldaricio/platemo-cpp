@@ -22,9 +22,9 @@ DATASETS=(1 2 3 4)
 # ── Configuración por estudio ──────────────────────────────────────────────
 POPSIZE=100      # tamaño de población MOEA por trial interno
 MAXFE=2000      # evaluaciones máx por trial interno  (pruebas: 1000 | producción: 5000)
-TRIALS=10       # trials Optuna por estudio            (pruebas: 10   | producción: 50)
+TRIALS=20       # trials Optuna por estudio            (pruebas: 10   | producción: 50)
 MODE=discrete   # continuous | discrete
-TIMEOUT=300     # segundos máx por trial               (pruebas: 300  | producción: 7200)
+TIMEOUT=1000     # segundos máx por trial               (pruebas: 300  | producción: 7200)
 JOBS=$(nproc)   # estudios en paralelo — ajustá a núcleos físicos disponibles
 
 # ── Paths ──────────────────────────────────────────────────────────────────

@@ -60,15 +60,26 @@ EVAL_DUR=150.0      # ventana total de simulación (ms); debe ser > ENCODING_DUR
 MAX_RATE=100.0      # PoissonEncoder max firing rate (Hz)
 REFRAC=3.0          # PoissonEncoder refractory period (ms)
 
-# SparseSNN binary classification (solo aplica cuando nClasses==2, es decir datasets 1-5)
-# T_max = floor((EVAL_DUR - ENCODING_DUR) / DT) = 50 con los defaults actuales
-BINARY_OUTPUTS=1        # 1 → 1 neurona de salida, decodificación por umbral / AUC (default)
-                        # 2 → 2 neuronas de salida, decodificación WTA (igual que multiclase)
-FITNESS_MODE=auc   # "accuracy" → f2 = 1-accuracy(threshold=ACCURACY_THRESHOLD)
-                        # "auc"      → f2 = 1-AUC (barre umbrales 1..T_max)
-                        # (solo aplica cuando BINARY_OUTPUTS=1)
+# Arquitectura SNN de salida — selector unificado:
+#   1 → AUC      + 1 neurona de salida + encoder Poisson  (default, clasificación binaria)
+#   2 → Accuracy + 2 neuronas de salida + encoder Poisson
+#   3 → Accuracy + 2 neuronas de salida + encoder TTFS
+# Dejar vacío ("") para controlar FITNESS_MODE / BINARY_OUTPUTS / ENCODER de forma manual.
+ARCHITECTURE=1
+
+# Valores manuales — se sobreescriben si ARCHITECTURE está seteada (1/2/3)
+FITNESS_MODE=auc        # "auc" o "accuracy"
+BINARY_OUTPUTS=1        # 1 → umbral/AUC  |  2 → WTA multiclase
+ENCODER=poisson         # "poisson" o "ttfs"
+
+case "$ARCHITECTURE" in
+  1) FITNESS_MODE=auc;      BINARY_OUTPUTS=1; ENCODER=poisson ;;
+  2) FITNESS_MODE=accuracy; BINARY_OUTPUTS=2; ENCODER=poisson ;;
+  3) FITNESS_MODE=accuracy; BINARY_OUTPUTS=2; ENCODER=ttfs    ;;
+esac
+
 ACCURACY_THRESHOLD=1    # umbral fijo de spikes usado cuando FITNESS_MODE=accuracy
-SAVE_SPIKES=true       # true → guarda _spikes.csv con spike counts del test set
+SAVE_SPIKES=true        # true → guarda _spikes.csv con spike counts del test set
                         #        (necesario para graficar ROC/AUC con plot_roc.py)
                         #        (solo aplica cuando BINARY_OUTPUTS=1)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -122,13 +133,13 @@ run_one() {
 
     # Use per-combination params from params_table.sh if available; else use globals.
     local extra_params
-    extra_params=$(get_params "$algo" "$ds" "$nh" 2>/dev/null || true)
+    extra_params=$(get_params "$algo" "$ds" 2>/dev/null || true)
     if [[ -z "$extra_params" ]]; then
         extra_params="--disC $DISC --disM $DISM --proM $PROM --disSM $DISSM --proSM $PROSM \
                       --sLower $SLOWER --sUpper $SUPPER --wscale $WSCALE \
                       --dt $DT --encoding-duration $ENCODING_DUR --eval-duration $EVAL_DUR \
                       --max-rate $MAX_RATE --refractory-period $REFRAC \
-                      --binary-outputs $BINARY_OUTPUTS \
+                      --binary-outputs $BINARY_OUTPUTS --encoder $ENCODER \
                       --fitness-mode $FITNESS_MODE --threshold $ACCURACY_THRESHOLD"
     fi
 
@@ -158,7 +169,7 @@ export BIN DATAPATH TMPDIR POPSIZE MAXFE_DEFAULT WSCALE BASE_SEED=$SEED
 export "${!MAXFE_@}"    # exporta MAXFE_DEFAULT + todas las entradas MAXFE_<ALGO>_<DS>
 export DISC DISM PROM DISSM PROSM SLOWER SUPPER
 export DT ENCODING_DUR EVAL_DUR MAX_RATE REFRAC
-export BINARY_OUTPUTS FITNESS_MODE ACCURACY_THRESHOLD SAVE_SPIKES
+export BINARY_OUTPUTS FITNESS_MODE ENCODER ACCURACY_THRESHOLD SAVE_SPIKES
 
 total=$(( ${#ALGOS[@]} * ${#DATASETS[@]} * ${#NHIDDENS[@]} * RUNS ))
 echo "Output directory: $RUN_DIR"

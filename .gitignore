@@ -3,3 +3,8 @@ build/
 *.a
 
 results/
+bo_results/
+*.log
+*.out
+*.err
+__pycache__/

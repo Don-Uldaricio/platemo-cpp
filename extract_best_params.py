@@ -19,23 +19,36 @@ import sys
 from pathlib import Path
 
 
+ARCHITECTURES = {
+    1: dict(fitness_mode="auc",      binary_outputs=1, encoder="poisson"),
+    2: dict(fitness_mode="accuracy", binary_outputs=2, encoder="poisson"),
+    3: dict(fitness_mode="accuracy", binary_outputs=2, encoder="ttfs"),
+}
+
+
 def parse_study_name(name: str):
-    """Parse 'snn_bo_<ALGO>_ds<DS>_nh<NH>' → (algo, ds, nh) or None."""
-    m = re.match(r"snn_bo_(\w+)_ds(\d+)_nh(\d+)$", name)
-    return (m.group(1), m.group(2), m.group(3)) if m else None
+    """Parse 'snn_bo_<ALGO>_ds<DS>' → (algo, ds) or None."""
+    m = re.match(r"snn_bo_(\w+)_ds(\d+)$", name)
+    return (m.group(1), m.group(2)) if m else None
 
 
 def params_to_flags(params: dict) -> str:
     """Convert Optuna best_trial.params dict to platemo_cpp CLI flags string."""
+    arch_id = params.get("architecture", 1)
+    arch    = ARCHITECTURES[arch_id]
+
     s_lower = params["sLower"]
     s_gap   = params["sGap"]
     s_upper = min(s_lower + s_gap, 1.0)
 
-    enc       = params["encoding_duration"]
-    extra     = params["extra_eval"]
-    eval_dur  = enc + extra
+    enc      = params["encoding_duration"]
+    extra    = params["extra_eval"]
+    eval_dur = enc + extra
 
     parts = [
+        f"--fitness-mode {arch['fitness_mode']}",
+        f"--binary-outputs {arch['binary_outputs']}",
+        f"--encoder {arch['encoder']}",
         f"--disC {params['disC']}",
         f"--disM {params['disM']}",
         f"--proM {params['proM']}",
@@ -47,9 +60,12 @@ def params_to_flags(params: dict) -> str:
         f"--dt {params['dt']}",
         f"--encoding-duration {enc}",
         f"--eval-duration {eval_dur:.2f}",
-        f"--max-rate {params['max_rate']}",
-        f"--refractory-period {params['refractory_period']}",
     ]
+    if arch["encoder"] == "poisson":
+        parts += [
+            f"--max-rate {params['max_rate']}",
+            f"--refractory-period {params['refractory_period']}",
+        ]
     return " ".join(parts)
 
 
@@ -90,7 +106,7 @@ def main():
             print(f"  SKIP (unrecognised name): {study_name}", file=sys.stderr)
             continue
 
-        algo, ds, nh = parsed
+        algo, ds = parsed
         try:
             study = optuna.load_study(
                 study_name=study_name,
@@ -98,7 +114,7 @@ def main():
             )
             bt    = study.best_trial
             flags = params_to_flags(bt.params)
-            entries[(algo, ds, nh)] = (flags, bt.value)
+            entries[(algo, ds)] = (flags, bt.value)
             print(f"  OK   {study_name:<40s}  HV={bt.value:.6f}")
         except Exception as exc:
             print(f"  FAIL {study_name}: {exc}", file=sys.stderr)
@@ -123,11 +139,11 @@ def main():
         "#   PARAMS_TABLE=./params_table.sh bash run_experiments.sh",
         "",
         "get_params() {",
-        '    case "${1}_${2}_${3}" in',
+        '    case "${1}_${2}" in',
     ]
 
-    for (algo, ds, nh), (flags, hv) in sorted(entries.items()):
-        key = f"{algo}_{ds}_{nh}"
+    for (algo, ds), (flags, hv) in sorted(entries.items()):
+        key = f"{algo}_{ds}"
         lines.append(f"        {key})  # HV={hv:.6f}")
         lines.append(f'            echo "{flags}" ;;')
 
