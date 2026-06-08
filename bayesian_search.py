@@ -39,6 +39,8 @@ ARCHITECTURES = {
             label="arch2_acc_poisson"),
     3: dict(fitness_mode="accuracy", binary_outputs=2, encoder="ttfs",
             label="arch3_acc_ttfs"),
+    4: dict(fitness_mode="auc",      binary_outputs=1, encoder="ttfs",
+            label="arch4_auc_ttfs"),
 }
 
 # nHidden values evaluated per trial — hyperparameters are optimized for robustness
@@ -274,7 +276,7 @@ def main():
     print("=" * 60)
     print(f"  Algorithm    : {args.algo}")
     print(f"  Dataset      : {args.dataset}")
-    print(f"  Architecture : hyperparameter (1=AUC/Poisson, 2=Acc/Poisson, 3=Acc/TTFS)")
+    print(f"  Architecture : hyperparameter (1=AUC/Poisson, 2=Acc/Poisson, 3=Acc/TTFS, 4=AUC/TTFS)")
     print(f"  nHidden eval : {NHIDDENS_EVAL}")
     print(f"  PopSize      : {args.popsize}")
     print(f"  MaxFE        : {args.maxfe}")

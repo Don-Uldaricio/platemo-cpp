@@ -23,6 +23,7 @@ ARCHITECTURES = {
     1: dict(fitness_mode="auc",      binary_outputs=1, encoder="poisson"),
     2: dict(fitness_mode="accuracy", binary_outputs=2, encoder="poisson"),
     3: dict(fitness_mode="accuracy", binary_outputs=2, encoder="ttfs"),
+    4: dict(fitness_mode="auc",      binary_outputs=1, encoder="ttfs"),
 }
 
 

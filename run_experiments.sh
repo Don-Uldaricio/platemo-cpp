@@ -11,7 +11,7 @@ CSVFILE=$RUN_DIR/results.csv
 CONVFILE=$RUN_DIR/convergence.csv
 
 ALGOS=(MOEACKF SNSGAII)
-DATASETS=(1 2 3 4)
+DATASETS=(1)
 NHIDDENS=(20)
 POPSIZE=100
 RUNS=6
@@ -23,14 +23,14 @@ RUNS=6
 # Si no existe la entrada específica se usa MAXFE_DEFAULT como fallback.
 MAXFE_DEFAULT=4000
 
-MAXFE_MOEACKF_1=5000
+MAXFE_MOEACKF_1=2000
 MAXFE_MOEACKF_2=10000
 MAXFE_MOEACKF_3=10000
 MAXFE_MOEACKF_4=10000
 MAXFE_MOEACKF_5=5000
 MAXFE_MOEACKF_6=5000
 
-MAXFE_SNSGAII_1=5000
+MAXFE_SNSGAII_1=2000
 MAXFE_SNSGAII_2=10000
 MAXFE_SNSGAII_3=10000
 MAXFE_SNSGAII_4=10000
@@ -64,10 +64,11 @@ REFRAC=3.0          # PoissonEncoder refractory period (ms)
 #   1 → AUC      + 1 neurona de salida + encoder Poisson  (default, clasificación binaria)
 #   2 → Accuracy + 2 neuronas de salida + encoder Poisson
 #   3 → Accuracy + 2 neuronas de salida + encoder TTFS
+#   4 → AUC      + 1 neurona de salida + encoder TTFS
 # Dejar vacío ("") para controlar FITNESS_MODE / BINARY_OUTPUTS / ENCODER de forma manual.
 ARCHITECTURE=1
 
-# Valores manuales — se sobreescriben si ARCHITECTURE está seteada (1/2/3)
+# Valores manuales — se sobreescriben si ARCHITECTURE está seteada (1/2/3/4)
 FITNESS_MODE=auc        # "auc" o "accuracy"
 BINARY_OUTPUTS=1        # 1 → umbral/AUC  |  2 → WTA multiclase
 ENCODER=poisson         # "poisson" o "ttfs"
@@ -76,6 +77,7 @@ case "$ARCHITECTURE" in
   1) FITNESS_MODE=auc;      BINARY_OUTPUTS=1; ENCODER=poisson ;;
   2) FITNESS_MODE=accuracy; BINARY_OUTPUTS=2; ENCODER=poisson ;;
   3) FITNESS_MODE=accuracy; BINARY_OUTPUTS=2; ENCODER=ttfs    ;;
+  4) FITNESS_MODE=auc;      BINARY_OUTPUTS=1; ENCODER=ttfs    ;;
 esac
 
 ACCURACY_THRESHOLD=1    # umbral fijo de spikes usado cuando FITNESS_MODE=accuracy
