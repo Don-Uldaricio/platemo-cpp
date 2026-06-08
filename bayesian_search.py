@@ -10,6 +10,7 @@ Architecture IDs:
     1 — ROC/AUC + 1 output neuron + Poisson encoder + threshold decoder
     2 — Accuracy + 2 output neurons + Poisson encoder + classification (WTA) decoder
     3 — Accuracy + 2 output neurons + TTFS encoder + classification (WTA) decoder
+    4 — ROC/AUC + 1 output neuron + TTFS encoder + threshold decoder
 
 Usage:
     python bayesian_search.py [options]

@@ -8,6 +8,7 @@
 #   1 — ROC/AUC + 1 output neuron + Poisson encoder + threshold decoder
 #   2 — Accuracy + 2 output neurons + Poisson encoder + classification (WTA) decoder
 #   3 — Accuracy + 2 output neurons + TTFS encoder + classification (WTA) decoder
+#   4 — ROC/AUC + 1 output neuron + TTFS encoder + threshold decoder
 #
 # Dentro de cada trial, el script Python evalúa el candidato con múltiples nHidden
 # (20, 100, 200) y retorna el HV medio — los hiperparámetros elegidos son robustos
@@ -72,7 +73,7 @@ echo "Output directory : $OUTDIR"
 echo "Studies          : $total  (${#ALGOS[@]} algos × ${#DATASETS[@]} datasets)"
 echo "Parallel jobs    : $JOBS"
 echo "Trials per study : $TRIALS  (MAXFE=$MAXFE, POPSIZE=$POPSIZE, mode=$MODE)"
-echo "Arquitectura     : hiperparámetro por trial (1=AUC/Poisson, 2=Acc/Poisson, 3=Acc/TTFS)"
+echo "Arquitectura     : hiperparámetro por trial (1=AUC/Poisson, 2=Acc/Poisson, 3=Acc/TTFS, 4=AUC/TTFS)"
 echo "nHidden por trial: 20, 100, 200 (HV medio — robusto a tamaño de red)"
 echo ""
 
