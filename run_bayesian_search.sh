@@ -26,7 +26,8 @@ MAXFE=2000      # evaluaciones máx por trial interno  (pruebas: 1000 | producci
 TRIALS=20       # trials Optuna por estudio            (pruebas: 10   | producción: 50)
 MODE=discrete   # continuous | discrete
 TIMEOUT=1000     # segundos máx por trial               (pruebas: 300  | producción: 7200)
-JOBS=$(nproc)   # estudios en paralelo — ajustá a núcleos físicos disponibles
+JOBS=8          # estudios en paralelo — 1 por combinación (2 algos × 4 datasets)
+export OMP_NUM_THREADS=25 # threads OpenMP por proceso C++: 8 estudios × 25 = 200 threads totales
 
 # ── Paths ──────────────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

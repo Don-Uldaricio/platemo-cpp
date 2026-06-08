@@ -25,6 +25,7 @@ Dependencies: optuna  (pip install optuna)
 """
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -103,6 +104,7 @@ def run_binary(params: dict, fixed: dict, nhidden: int, seed: int, timeout: int)
             capture_output=True,
             text=True,
             timeout=timeout,
+            env={**os.environ, "OMP_NUM_THREADS": os.environ.get("OMP_NUM_THREADS", "1")},
         )
     except subprocess.TimeoutExpired:
         print(f"  [TIMEOUT after {timeout}s, nhidden={nhidden}]", file=sys.stderr)
