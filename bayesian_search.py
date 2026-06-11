@@ -29,6 +29,7 @@ import os
 import re
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 BINARY = Path(__file__).parent / "build" / "platemo_cpp"
@@ -139,7 +140,10 @@ def run_binary_multi_nhidden(
     Using the mean ensures the selected hyperparameters are robust across
     different network sizes rather than optimal for just one.
     """
-    hvs = [run_binary(params, fixed, nh, seed, timeout) for nh in nhiddens]
+    with ThreadPoolExecutor(max_workers=len(nhiddens)) as executor:
+        futures = [executor.submit(run_binary, params, fixed, nh, seed, timeout)
+                   for nh in nhiddens]
+        hvs = [f.result() for f in futures]
     if not hvs:
         return 0.0
     mean_hv = sum(hvs) / len(hvs)
