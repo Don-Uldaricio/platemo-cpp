@@ -99,11 +99,11 @@ DISCRETE_GRIDS = {
     "sGap":               [0.10, 0.20, 0.30],
     "wScale":             [1.0, 2.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0],
     "dt":                 [0.1, 0.25, 0.5, 1.0, 2.0],
-    "encoding_duration":  [1, 5, 10, 20, 30, 50, 75, 100, 150],
-    "extra_eval":         [10, 50, 100, 200],
+    "encoding_duration":  list(range(10, 160, 10)),   # [10,20,...,150] — 15 valores
+    "extra_eval":         list(range(10, 210, 10)),   # [10,20,...,200] — 20 valores
     # Poisson-only parameters
     "max_rate":           [20, 50, 100, 200, 300, 500],
-    "refractory_period":  [1.0, 2.0, 5.0],
+    "refractory_period":  list(range(1, 6)),          # [1,2,...,15] ms — 15 valores
 }
 
 
@@ -250,23 +250,22 @@ def build_objective(fixed: dict, nhiddens: list, timeout: int,
             params["proSM"] = trial.suggest_float("proSM", 0.3,   3.0)
 
             # Sparsity bounds — discrete (boundary values have clear physical meaning)
-            s_lower = trial.suggest_categorical("sLower", DISCRETE_GRIDS["sLower"])
-            s_gap   = trial.suggest_categorical("sGap",   DISCRETE_GRIDS["sGap"])
+            s_lower = trial.suggest_float("sLower", 0.50, 0.95)
+            s_gap   = trial.suggest_float("sGap",   0.05, 0.30)
 
             params["wScale"] = trial.suggest_float("wScale", 1.0, 50.0, log=True)
 
             # dt — discrete (standard SNN timesteps: 0.1, 0.25, 0.5, 1.0, 2.0 ms)
             params["dt"] = trial.suggest_categorical("dt", DISCRETE_GRIDS["dt"])
 
-            # Timing — continuous (smooth landscape)
-            enc_dur    = trial.suggest_float("encoding_duration", 10.0, 150.0)
-            extra_eval = trial.suggest_float("extra_eval", 10.0, 200.0)
+            # Timing — enteros con paso 10 (TPE interpola como escala ordinal)
+            enc_dur    = trial.suggest_int("encoding_duration", 10, 150, step=10)
+            extra_eval = trial.suggest_int("extra_eval", 10, 200, step=10)
 
             # Poisson-only hyperparameters
             if use_poisson:
-                params["max_rate"]          = trial.suggest_float("max_rate", 20.0, 500.0, log=True)
-                params["refractory_period"] = trial.suggest_categorical(
-                    "refractory_period", DISCRETE_GRIDS["refractory_period"])
+                params["max_rate"]          = trial.suggest_float("max_rate", 20.0, 200.0, log=True)
+                params["refractory_period"] = trial.suggest_int("refractory_period", 1, 5)
         else:
             # MOEA operator hyperparameters — continuous float search
             params["disC"]  = trial.suggest_float("disC",  5.0, 100.0, log=True)
@@ -278,7 +277,7 @@ def build_objective(fixed: dict, nhiddens: list, timeout: int,
             s_lower = trial.suggest_float("sLower", 0.30, 0.95)
             s_gap   = trial.suggest_float("sGap",   0.01, max(DISCRETE_GRIDS["sGap"]))
 
-            params["wScale"] = trial.suggest_float("wScale", 0.1, 20.0, log=True)
+            params["wScale"] = trial.suggest_float("wScale", 1, 20.0, log=True)
 
             # SNN timing hyperparameters
             params["dt"]   = trial.suggest_float("dt", 0.1, 2.0)
