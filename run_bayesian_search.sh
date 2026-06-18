@@ -22,9 +22,12 @@ DATASETS=(1 2 3 4)
 
 # ── Configuración por estudio ──────────────────────────────────────────────
 POPSIZE=100      # tamaño de población MOEA por trial interno
-MAXFE=2000      # evaluaciones máx por trial interno  (pruebas: 1000 | producción: 5000)
-TRIALS=20       # trials Optuna por estudio            (pruebas: 10   | producción: 50)
-MODE=discrete   # continuous | discrete
+EXTRA_GENS=20   # generaciones de evolución después del prior/init (pruebas: 10 | producción: 30-50)
+                # maxfe se calcula automáticamente por nhidden y algo:
+                #   MOEA-CKF: maxfe = 5*D + popsize + extra_gens*popsize  (D = (nF+1)*nH + nH*nOut)
+                #   S-NSGA-II: maxfe =       popsize + extra_gens*popsize
+TRIALS=2       # trials Optuna por estudio            (pruebas: 10   | producción: 50)
+MODE=mixed      # continuous | discrete | mixed
 TIMEOUT=1000     # segundos máx por trial               (pruebas: 300  | producción: 7200)
 JOBS=8          # estudios en paralelo — 1 por combinación (2 algos × 4 datasets)
 export OMP_NUM_THREADS=25 # threads OpenMP por proceso C++: 8 estudios × 25 = 200 threads totales
@@ -47,7 +50,7 @@ run_one_study() {
         --algo      "$algo"        \
         --dataset   "$ds"          \
         --popsize   "$POPSIZE"     \
-        --maxfe     "$MAXFE"       \
+        --extra-gens "$EXTRA_GENS" \
         --trials    "$TRIALS"      \
         --mode      "$MODE"        \
         --timeout   "$TIMEOUT"     \
@@ -66,14 +69,14 @@ run_one_study() {
     fi
 }
 export -f run_one_study
-export VENV SCRIPT_DIR POPSIZE MAXFE TRIALS MODE TIMEOUT OUTDIR
+export VENV SCRIPT_DIR POPSIZE EXTRA_GENS TRIALS MODE TIMEOUT OUTDIR
 
 # ── Lanzamiento ────────────────────────────────────────────────────────────
 total=$(( ${#ALGOS[@]} * ${#DATASETS[@]} ))
 echo "Output directory : $OUTDIR"
 echo "Studies          : $total  (${#ALGOS[@]} algos × ${#DATASETS[@]} datasets)"
 echo "Parallel jobs    : $JOBS"
-echo "Trials per study : $TRIALS  (MAXFE=$MAXFE, POPSIZE=$POPSIZE, mode=$MODE)"
+echo "Trials per study : $TRIALS  (EXTRA_GENS=$EXTRA_GENS, POPSIZE=$POPSIZE, mode=$MODE)"
 echo "Arquitectura     : hiperparámetro por trial (1=AUC/Poisson, 2=Acc/Poisson, 3=Acc/TTFS, 4=AUC/TTFS)"
 echo "nHidden por trial: 20, 100, 200 (HV medio — robusto a tamaño de red)"
 echo ""
