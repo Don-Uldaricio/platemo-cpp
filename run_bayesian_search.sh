@@ -72,13 +72,17 @@ export -f run_one_study
 export VENV SCRIPT_DIR POPSIZE EXTRA_GENS TRIALS MODE TIMEOUT OUTDIR
 
 # ── Lanzamiento ────────────────────────────────────────────────────────────
+NHIDDENS_STR=$("$VENV" -c \
+    "import sys; sys.path.insert(0,'$SCRIPT_DIR'); from bayesian_search import NHIDDENS_EVAL; print(*NHIDDENS_EVAL, sep=', ')" \
+    2>/dev/null || echo "ver bayesian_search.py")
+
 total=$(( ${#ALGOS[@]} * ${#DATASETS[@]} ))
 echo "Output directory : $OUTDIR"
 echo "Studies          : $total  (${#ALGOS[@]} algos × ${#DATASETS[@]} datasets)"
 echo "Parallel jobs    : $JOBS"
 echo "Trials per study : $TRIALS  (EXTRA_GENS=$EXTRA_GENS, POPSIZE=$POPSIZE, mode=$MODE)"
 echo "Arquitectura     : hiperparámetro por trial (1=AUC/Poisson, 2=Acc/Poisson, 3=Acc/TTFS, 4=AUC/TTFS)"
-echo "nHidden por trial: 20, 100, 200 (HV medio — robusto a tamaño de red)"
+echo "nHidden por trial: $NHIDDENS_STR (HV medio — robusto a tamaño de red)"
 echo ""
 
 parallel --jobs "$JOBS" --bar \
