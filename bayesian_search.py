@@ -15,11 +15,11 @@ Architecture IDs:
 Usage:
     python bayesian_search.py [options]
 
-    # Quick sanity test (3 trials, small generation budget):
-    python bayesian_search.py --popsize 20 --extra-gens 10 --trials 3
+    # Quick sanity test (3 trials, small FE budget):
+    python bayesian_search.py --popsize 20 --maxfe 500 --trials 3
 
-    # Real search (tune with a reasonable generation budget):
-    python bayesian_search.py --popsize 50 --extra-gens 30 --trials 50
+    # Real search (tune with a reasonable FE budget):
+    python bayesian_search.py --popsize 50 --maxfe 2000 --trials 50
 
 Dependencies: optuna  (pip install optuna)
 """
@@ -65,28 +65,6 @@ def infer_nfeatures(dataset: int, datapath: str) -> int:
     return len(first_line.strip().split(',')) - 1
 
 
-def compute_maxfe(algo: str, nhidden: int, nfeatures: int, noutputs: int,
-                  popsize: int, extra_gens: int) -> int:
-    """Compute the maxfe budget for one inner MOEA run.
-
-    D = (nFeatures + 1) * nHidden + nHidden * nOutputs   (mirrors SparseSNN::Setting)
-    The +1 accounts for the bias neuron that connects to the hidden layer.
-
-    MOEA-CKF prior analysis (PriorAnalysis_initialization, isReal=True):
-        FE_prior = 5*D + popsize   (5 identity-mask reps x D evals + initial pop)
-    S-NSGA-II has no prior; only pays for the initial population:
-        FE_init  = popsize
-
-    Both algorithms then run extra_gens generations (popsize offspring evals each).
-    """
-    D = (nfeatures + 1) * nhidden + nhidden * noutputs
-    if algo.upper() == "MOEACKF":
-        fe_init = 5 * D + popsize
-    else:
-        fe_init = popsize
-    return fe_init + extra_gens * popsize
-
-
 # Grillas para modo discreto: valores candidatos por parámetro.
 # Editá estas listas si querés ampliar o reducir el espacio de búsqueda.
 DISCRETE_GRIDS = {
@@ -108,12 +86,8 @@ DISCRETE_GRIDS = {
 
 
 def run_binary(params: dict, fixed: dict, nhidden: int, seed: int, timeout: int,
-               nfeatures: int, extra_gens: int) -> float:
+               maxfe: int) -> float:
     """Run the C++ binary for a specific nhidden and return HV (0.0 on failure)."""
-    noutputs = int(fixed.get("binary-outputs", 1))
-    maxfe    = compute_maxfe(fixed["algo"], nhidden, nfeatures, noutputs,
-                             int(fixed["popsize"]), extra_gens)
-
     cmd = [str(BINARY)]
     for k, v in fixed.items():
         cmd += [f"--{k}", str(v)]
@@ -177,8 +151,7 @@ def run_binary_multi_nhidden(
     nhiddens: list,
     seed: int,
     timeout: int,
-    nfeatures: int,
-    extra_gens: int,
+    maxfe: int,
 ) -> float:
     """Run the binary once per nhidden value and return the mean HV.
 
@@ -186,8 +159,7 @@ def run_binary_multi_nhidden(
     different network sizes rather than optimal for just one.
     """
     with ThreadPoolExecutor(max_workers=len(nhiddens)) as executor:
-        futures = [executor.submit(run_binary, params, fixed, nh, seed, timeout,
-                                   nfeatures, extra_gens)
+        futures = [executor.submit(run_binary, params, fixed, nh, seed, timeout, maxfe)
                    for nh in nhiddens]
         hvs = [f.result() for f in futures]
     if not hvs:
@@ -199,7 +171,7 @@ def run_binary_multi_nhidden(
 
 
 def build_objective(fixed: dict, nhiddens: list, timeout: int,
-                    nfeatures: int, extra_gens: int, mode: str = "continuous"):
+                    maxfe: int, mode: str = "continuous"):
     def objective(trial):
         params = {}
 
@@ -295,8 +267,7 @@ def build_objective(fixed: dict, nhiddens: list, timeout: int,
         params["evaluation_duration"] = enc_dur + extra_eval
 
         hv = run_binary_multi_nhidden(params, trial_fixed, nhiddens, seed=trial.number,
-                                      timeout=timeout, nfeatures=nfeatures,
-                                      extra_gens=extra_gens)
+                                      timeout=timeout, maxfe=maxfe)
         return hv
 
     return objective
@@ -313,10 +284,9 @@ def main():
                         help="Dataset 1-4 (default: 1)")
     parser.add_argument("--popsize",    type=int, default=50,
                         help="Population size (default: 50)")
-    parser.add_argument("--extra-gens", type=int, default=30,
-                        help="Generations of evolution after prior/init phase (default: 30). "
-                             "maxfe is computed automatically per nhidden and algo: "
-                             "MOEA-CKF adds 5*D+popsize for prior; S-NSGA-II adds only popsize.")
+    parser.add_argument("--maxfe", type=int, default=2000,
+                        help="Total function-evaluation budget passed directly to the C++ binary "
+                             "(same value for all nhidden values, default: 2000)")
     parser.add_argument("--datapath",
                         default=str(Path(__file__).parent / "data"),
                         help="Absolute or relative path to dataset CSVs (default: data)")
@@ -343,8 +313,7 @@ def main():
         print("Build it first: cd build && cmake .. && make -j$(nproc)", file=sys.stderr)
         sys.exit(1)
 
-    nfeatures  = infer_nfeatures(args.dataset, args.datapath)
-    extra_gens = args.extra_gens
+    nfeatures = infer_nfeatures(args.dataset, args.datapath)
 
     fixed = {
         "problem":  "SparseSNN",
@@ -355,7 +324,6 @@ def main():
         "datapath": args.datapath,
     }
     # fitness-mode, binary-outputs and encoder are selected per-trial (architecture hyperparameter)
-    # maxfe is computed per run by compute_maxfe() based on algo, nhidden, nfeatures and extra_gens
 
     print("=" * 60)
     print("Bayesian Hyperparameter Search — SparseSNN")
@@ -365,12 +333,7 @@ def main():
     print(f"  Architecture : hyperparameter (1=AUC/Poisson, 2=Acc/Poisson, 3=Acc/TTFS, 4=AUC/TTFS)")
     print(f"  nHidden eval : {NHIDDENS_EVAL}")
     print(f"  PopSize      : {args.popsize}")
-    print(f"  Extra gens   : {extra_gens}")
-    print(f"  MaxFE per run (nOutputs=1 / nOutputs=2):")
-    for nh in NHIDDENS_EVAL:
-        mfe1 = compute_maxfe(args.algo, nh, nfeatures, 1, args.popsize, extra_gens)
-        mfe2 = compute_maxfe(args.algo, nh, nfeatures, 2, args.popsize, extra_gens)
-        print(f"    nHidden={nh:>3}: {mfe1:>7} / {mfe2:>7}")
+    print(f"  MaxFE        : {args.maxfe}")
     print(f"  BO trials    : {args.trials}")
     print(f"  Mode         : {args.mode}")
     print(f"  Storage      : {args.storage}")
@@ -388,7 +351,7 @@ def main():
     )
 
     objective = build_objective(fixed, NHIDDENS_EVAL, args.timeout,
-                               nfeatures, extra_gens, args.mode)
+                               args.maxfe, args.mode)
 
     study.optimize(objective, n_trials=args.trials, n_jobs=args.jobs,
                    show_progress_bar=True)
@@ -409,8 +372,6 @@ def main():
     # Reproduce command for one representative nhidden
     best_arch = ARCHITECTURES[bt.params.get("architecture", 1)]
     repr_nhidden = NHIDDENS_EVAL[1]  # middle value
-    repr_maxfe   = compute_maxfe(args.algo, repr_nhidden, nfeatures,
-                                 best_arch["binary_outputs"], args.popsize, extra_gens)
     print(f"\nTo reproduce the best run (nhidden={repr_nhidden}, arch={best_arch['label']}):")
     sL = bt.params.get("sLower", 0.75)
     sG = bt.params.get("sGap", 0.25)
@@ -421,7 +382,7 @@ def main():
         f"--dataset {args.dataset}",
         f"--nhidden {repr_nhidden}",
         f"--popsize {args.popsize}",
-        f"--maxfe {repr_maxfe}",
+        f"--maxfe {args.maxfe}",
         f"--fitness-mode {best_arch['fitness_mode']}",
         f"--binary-outputs {best_arch['binary_outputs']}",
         f"--encoder {best_arch['encoder']}",
