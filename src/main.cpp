@@ -37,7 +37,6 @@ struct RunConfig {
     std::string csvOutFile;
     std::string convOutFile;
     std::string spikesOutFile;  // CSV con spike counts del test set por solución del frente
-    int logInterval = 0;
 
     // MOEA operator hyperparameters (tuneable via CLI / Bayesian optimization)
     AlgoConfig acfg;
@@ -74,7 +73,7 @@ void printHelp(const char* prog) {
               << "  --out       <file>             Save Pareto front to CSV (optional)\n"
               << "  --csv-out   <file>             Append per-run metrics to CSV (optional)\n"
               << "  --conv-out  <file>             Append per-checkpoint HV history to CSV (optional)\n"
-              << "  --log-interval <int>           FE interval between convergence snapshots (default: maxFE/10)\n"
+              << "  --conv-out logs HV at every generation (generation column in CSV)\n"
               << "  --wscale    <float>            Weight scale factor applied at evaluation (default: 1.0)\n"
               << "  --sanity-check                 Evaluate extreme weight configs and exit (no GA run)\n"
               << "  --verbose                      Print per-generation progress\n"
@@ -259,8 +258,6 @@ int main(int argc, char* argv[]) {
     cfg.outFile     = "";
     cfg.csvOutFile  = "";
     cfg.convOutFile = "";
-    cfg.logInterval = 0;
-
     // Parse arguments
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
@@ -277,7 +274,6 @@ int main(int argc, char* argv[]) {
         else if (arg == "--out"          && i+1 < argc) cfg.outFile     = argv[++i];
         else if (arg == "--csv-out"      && i+1 < argc) cfg.csvOutFile  = argv[++i];
         else if (arg == "--conv-out"     && i+1 < argc) cfg.convOutFile = argv[++i];
-        else if (arg == "--log-interval" && i+1 < argc) cfg.logInterval  = std::stoi(argv[++i]);
         else if (arg == "--wscale"       && i+1 < argc) cfg.wScale       = std::stod(argv[++i]);
         else if (arg == "--sanity-check")                cfg.sanityCheck  = true;
         else if (arg == "--verbose")                     cfg.verbose      = true;
@@ -395,17 +391,16 @@ int main(int argc, char* argv[]) {
         std::cout << "  D=" << prob.D << " (weights), M=2 (objectives)"
                   << ", train samples=" << nSamples << "\n";
 
-        // Setup convergence logging
+        // Setup convergence logging (HV por generación)
         if (!cfg.convOutFile.empty()) {
-            prob.logInterval = (cfg.logInterval > 0) ? cfg.logInterval : cfg.maxFE / 10;
-            prob.nextLogFE   = prob.logInterval;
-            prob.onLog = [&](int fe, const Population& pop) {
+            prob.logGenInterval = 1;
+            prob.onLog = [&](int gen, const Population& pop) {
                 double hv = HV(pop, prob.optimum);
                 std::ofstream f(cfg.convOutFile, std::ios::app);
                 if (!f.is_open()) return;
                 f.seekp(0, std::ios::end);
                 if (f.tellp() == 0)
-                    f << "algo,problem,dataset,nhidden,popsize,maxfe,run,seed,fe,hv\n";
+                    f << "algo,problem,dataset,nhidden,popsize,maxfe,run,seed,generation,hv\n";
                 f << cfg.algorithm << ","
                   << cfg.problem   << ","
                   << cfg.dataNo    << ","
@@ -414,7 +409,7 @@ int main(int argc, char* argv[]) {
                   << cfg.maxFE     << ","
                   << (run + 1)     << ","
                   << runSeed       << ","
-                  << fe            << ","
+                  << gen           << ","
                   << std::fixed << std::setprecision(6) << hv << "\n";
             };
         }

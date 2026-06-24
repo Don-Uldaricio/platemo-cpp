@@ -49,6 +49,7 @@ Population MOEACKF(Problem& prob, bool verbose = false,
 
     double rho = 0.5;
     std::vector<bool> NSV_prev, SV_prev;
+    int gen = 0;
 
     while (prob.NotTerminated(pop)) {
         Matrix objs = getObjs(pop);
@@ -190,7 +191,7 @@ Population MOEACKF(Problem& prob, bool verbose = false,
 
         if (verbose)
             std::cout << "FE=" << prob.FE << " popSize=" << pop.size() << "\n";
-        prob.MaybeLog(pop);
+        prob.LogGeneration(++gen, pop);
     }
     return pop;
 }

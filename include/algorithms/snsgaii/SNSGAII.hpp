@@ -27,6 +27,7 @@ Population SNSGAII(Problem& prob, bool verbose = false,
 
     prob.LogInitial(Population_);
 
+    int gen = 0;
     while (prob.NotTerminated(Population_)) {
         // Tournament selection — negate CrowdDis so higher diversity is preferred (NSGA-II semantics)
         std::vector<double> negCrowdDis(CrowdDis.size());
@@ -54,7 +55,7 @@ Population SNSGAII(Problem& prob, bool verbose = false,
 
         if (verbose)
             std::cout << "FE=" << prob.FE << " popSize=" << Population_.size() << "\n";
-        prob.MaybeLog(Population_);
+        prob.LogGeneration(++gen, Population_);
     }
     return Population_;
 }

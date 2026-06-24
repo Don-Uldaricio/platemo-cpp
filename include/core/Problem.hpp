@@ -23,8 +23,7 @@ public:
     std::chrono::steady_clock::time_point startTime;  // Tiempo de inicio, registrado en init()
 
     std::function<void(int, const Population&)> onLog;  // Callback opcional para loggear convergencia
-    int logInterval = 0;   // Cada cuántos FE llamar a onLog (0 = desactivado)
-    int nextLogFE   = 0;   // Próximo FE en que se disparará onLog
+    int logGenInterval = 0;  // Cada cuántas generaciones llamar a onLog (0 = desactivado)
 
     virtual ~Problem() = default;
 
@@ -101,25 +100,19 @@ public:
         return FE < maxFE;
     }
 
-    // Registra el estado de la población inicial al finalizar la inicialización del algoritmo.
-    // Usa prob.FE real para que el eje X del CSV refleje el costo total de inicialización
-    // (p.ej. PriorAnalysis de MOEACKF consume 5D+N FEs antes de la primera generación).
-    // Avanza nextLogFE al primer checkpoint posterior a FE para evitar filas fuera de orden.
+    // Registra el estado de la población en la generación 0 (tras la inicialización del algoritmo).
+    // Para MOEACKF se llama después de PriorAnalysis; para SNSGAII después de VSSPS.
     void LogInitial(const Population& pop) {
-        if (logInterval <= 0 || !onLog) return;
-        onLog(FE, pop);
-        while (nextLogFE <= FE) nextLogFE += logInterval;
+        if (logGenInterval <= 0 || !onLog) return;
+        onLog(0, pop);
     }
 
-    // Dispara el callback de logging si corresponde según el intervalo configurado.
-    // Usa el FE del checkpoint (nextLogFE) como valor registrado, no el FE real actual,
-    // para evitar filas duplicadas cuando varios checkpoints se saltan en una misma generación.
-    void MaybeLog(const Population& pop) {
-        if (logInterval <= 0 || !onLog) return;
-        while (nextLogFE > 0 && FE >= nextLogFE && nextLogFE <= maxFE) {
-            onLog(nextLogFE, pop);
-            nextLogFE += logInterval;
-        }
+    // Registra el HV de la población en la generación dada.
+    // Se llama al final de cada iteración del loop evolutivo con gen = 1, 2, 3, ...
+    void LogGeneration(int gen, const Population& pop) {
+        if (logGenInterval <= 0 || !onLog) return;
+        if (gen % logGenInterval == 0)
+            onLog(gen, pop);
     }
 
     // Inicializa el problema: llama a Setting(), obtiene el óptimo de referencia y resetea FE.
@@ -129,7 +122,6 @@ public:
         Setting();
         optimum = GetOptimum(10000);
         FE = 0;
-        nextLogFE = logInterval;
     }
 
 protected:

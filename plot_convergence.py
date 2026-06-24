@@ -15,14 +15,14 @@ with open(csv_path) as f:
             "algo": row["algo"],
             "dataset": int(row["dataset"]),
             "nhidden": int(row["nhidden"]),
-            "fe": int(row["fe"]),
+            "generation": int(row["generation"]),
             "hv": float(row["hv"]),
         })
 
-# group hv values by (algo, dataset, nhidden, fe)
+# group hv values by (algo, dataset, nhidden, generation)
 groups = defaultdict(list)
 for r in rows:
-    key = (r["algo"], r["dataset"], r["nhidden"], r["fe"])
+    key = (r["algo"], r["dataset"], r["nhidden"], r["generation"])
     groups[key].append(r["hv"])
 
 # aggregate
@@ -50,17 +50,17 @@ for r, ds in enumerate(datasets):
     for c, algo in enumerate(algos):
         ax = axes[r][c]
         for nh in nhidden_vals:
-            fe_vals = sorted(fe for (a, d, n, fe) in agg if a == algo and d == ds and n == nh)
-            if not fe_vals:
+            gen_vals = sorted(g for (a, d, n, g) in agg if a == algo and d == ds and n == nh)
+            if not gen_vals:
                 continue
-            means = np.array([agg[(algo, ds, nh, fe)][0] for fe in fe_vals])
-            stds = np.array([agg[(algo, ds, nh, fe)][1] for fe in fe_vals])
+            means = np.array([agg[(algo, ds, nh, g)][0] for g in gen_vals])
+            stds = np.array([agg[(algo, ds, nh, g)][1] for g in gen_vals])
             col = color_map[nh]
             ls = ls_map[nh]
-            ax.plot(fe_vals, means, label=f"nh={nh}", color=col, linestyle=ls)
-            ax.fill_between(fe_vals, means - stds, means + stds, alpha=0.2, color=col)
+            ax.plot(gen_vals, means, label=f"nh={nh}", color=col, linestyle=ls)
+            ax.fill_between(gen_vals, means - stds, means + stds, alpha=0.2, color=col)
         ax.set_title(f"{algo} — Dataset {ds}")
-        ax.set_xlabel("Function evaluations")
+        ax.set_xlabel("Generation")
         ax.legend(fontsize=8)
         if c == 0:
             ax.set_ylabel("HV (mean ± std)")
