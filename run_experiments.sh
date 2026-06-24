@@ -39,6 +39,9 @@ MAXFE_SNSGAII_6=5000
 SEED=50
 JOBS=$(nproc)       # parallel processes — tune to number of physical cores
 # JOBS=6      # parallel processes — tune to number of physical cores
+OMP_THREADS=1       # OMP threads per process (inner parallelism);
+                    # increase only when reducing JOBS to avoid oversubscription
+                    # e.g. JOBS=4, OMP_THREADS=4 on a 16-core machine
 WSCALE=15    # weight scale factor: pesos [0,1] × WSCALE antes de setWeights()
              # con el modelo Izhikevich se necesita WSCALE ≥ 10 para que las neuronas disparen
 
@@ -109,7 +112,7 @@ rm -f "$TMPDIR"/*.csv
 # Sanity check opcional: verifica que los pesos afectan la red antes de lanzar jobs.
 if [[ "$SANITY_CHECK" == "true" ]]; then
     echo "=== Pre-flight sanity check (dataset=${DATASETS[0]}, nhidden=${NHIDDENS[0]}, wscale=$WSCALE) ==="
-    OMP_NUM_THREADS=1 "$BIN" \
+    OMP_NUM_THREADS=$OMP_THREADS "$BIN" \
         --problem  SparseSNN \
         --dataset  "${DATASETS[0]}" \
         --nhidden  "${NHIDDENS[0]}" \
@@ -150,7 +153,7 @@ run_one() {
     [[ "$SAVE_SPIKES" == "true" ]] && spikes_flag="--spikes-out $spikes_out"
 
     # shellcheck disable=SC2086  # intentional word splitting on $extra_params y $spikes_flag
-    OMP_NUM_THREADS=1 "$BIN" \
+    OMP_NUM_THREADS=$OMP_THREADS "$BIN" \
         --algo     "$algo"     \
         --problem  SparseSNN   \
         --dataset  "$ds"       \
@@ -172,6 +175,7 @@ export "${!MAXFE_@}"    # exporta MAXFE_DEFAULT + todas las entradas MAXFE_<ALGO
 export DISC DISM PROM DISSM PROSM SLOWER SUPPER
 export DT ENCODING_DUR EVAL_DUR MAX_RATE REFRAC
 export BINARY_OUTPUTS FITNESS_MODE ENCODER ACCURACY_THRESHOLD SAVE_SPIKES
+export OMP_THREADS
 
 total=$(( ${#ALGOS[@]} * ${#DATASETS[@]} * ${#NHIDDENS[@]} * RUNS ))
 echo "Output directory: $RUN_DIR"
