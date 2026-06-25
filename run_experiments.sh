@@ -208,6 +208,13 @@ if [[ -n "$first_conv" ]]; then
     echo "Conv rows written: $(( $(wc -l < "$CONVFILE") - 1 ))"
 fi
 
+# Archive per-run convergence files
+CONVRUNSDIR=$RUN_DIR/convergence_runs
+mkdir -p "$CONVRUNSDIR"
+for f in "$TMPDIR"/*_conv.csv; do
+    [[ -f "$f" ]] && mv "$f" "$CONVRUNSDIR/"
+done
+
 # Move Pareto front files, spike counts and metadata out before cleanup
 FRONTSDIR=$RUN_DIR/fronts
 mkdir -p "$FRONTSDIR"
