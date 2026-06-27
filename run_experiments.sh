@@ -85,6 +85,11 @@ esac
 
 ACCURACY_THRESHOLD=1    # umbral fijo de spikes usado cuando FITNESS_MODE=accuracy
 SAVE_SPIKES=true        # true → guarda _spikes.csv con spike counts del test set
+
+# Bootstrap resampling fitness evaluation (replica Loyola-Jara et al. 2026)
+BOOTSTRAP_EVAL=false    # true → evaluar fitness sobre subconjuntos aleatorios con reemplazo
+BOOTSTRAP_N=50          # número de subconjuntos bootstrap por evaluación
+BOOTSTRAP_SIZE=50       # muestras por subconjunto
                         #        (necesario para graficar ROC/AUC con plot_roc.py)
                         #        (solo aplica cuando BINARY_OUTPUTS=1)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -152,7 +157,10 @@ run_one() {
     local spikes_flag=""
     [[ "$SAVE_SPIKES" == "true" ]] && spikes_flag="--spikes-out $spikes_out"
 
-    # shellcheck disable=SC2086  # intentional word splitting on $extra_params y $spikes_flag
+    local bootstrap_flags=""
+    [[ "$BOOTSTRAP_EVAL" == "true" ]] && bootstrap_flags="--bootstrap-eval --bootstrap-n $BOOTSTRAP_N --bootstrap-size $BOOTSTRAP_SIZE"
+
+    # shellcheck disable=SC2086  # intentional word splitting on $extra_params, $spikes_flag y $bootstrap_flags
     OMP_NUM_THREADS=$OMP_THREADS "$BIN" \
         --algo     "$algo"     \
         --problem  SparseSNN   \
@@ -167,7 +175,8 @@ run_one() {
         --csv-out  "$out"      \
         --conv-out "$conv_out" \
         --out      "$front_out" \
-        $spikes_flag
+        $spikes_flag \
+        $bootstrap_flags
 }
 export -f run_one get_params
 export BIN DATAPATH TMPDIR POPSIZE MAXFE_DEFAULT WSCALE BASE_SEED=$SEED
@@ -175,6 +184,7 @@ export "${!MAXFE_@}"    # exporta MAXFE_DEFAULT + todas las entradas MAXFE_<ALGO
 export DISC DISM PROM DISSM PROSM SLOWER SUPPER
 export DT ENCODING_DUR EVAL_DUR MAX_RATE REFRAC
 export BINARY_OUTPUTS FITNESS_MODE ENCODER ACCURACY_THRESHOLD SAVE_SPIKES
+export BOOTSTRAP_EVAL BOOTSTRAP_N BOOTSTRAP_SIZE
 export OMP_THREADS
 
 total=$(( ${#ALGOS[@]} * ${#DATASETS[@]} * ${#NHIDDENS[@]} * RUNS ))

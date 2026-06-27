@@ -56,6 +56,11 @@ struct RunConfig {
 
     // Encoder de spikes
     EncoderType encoderType   = EncoderType::POISSON;
+
+    // Bootstrap resampling fitness evaluation
+    bool bootstrapEval = false;
+    int  bootstrapN    = 50;
+    int  bootstrapSize = 50;
 };
 
 void printHelp(const char* prog) {
@@ -99,6 +104,9 @@ void printHelp(const char* prog) {
               << "  --threshold    <int>           Spike threshold for --fitness-mode accuracy (default: 1)\n"
               << "  --spikes-out   <file>          Save test-set spike counts per Pareto solution to CSV\n"
               << "                                 (enables ROC/AUC plotting with plot_roc.py; only with --binary-outputs 1)\n"
+              << "  --bootstrap-eval               Enable bootstrap resampling fitness evaluation\n"
+              << "  --bootstrap-n   <int>          Number of bootstrap subsets per evaluation (default: 50)\n"
+              << "  --bootstrap-size <int>         Samples per bootstrap subset, with replacement (default: 50)\n"
               << "\nProblems:\n"
               << "  SparseNN  : Multi-layer ANN with backprop fine-tuning (baseline)\n"
               << "  SparseSNN : Spiking neural network (Izhikevich) evaluated via spike decoding\n"
@@ -313,6 +321,9 @@ int main(int argc, char* argv[]) {
             }
             cfg.twoOutputBinary = (bo == 2);
         }
+        else if (arg == "--bootstrap-eval")               cfg.bootstrapEval = true;
+        else if (arg == "--bootstrap-n"    && i+1 < argc) cfg.bootstrapN    = std::stoi(argv[++i]);
+        else if (arg == "--bootstrap-size" && i+1 < argc) cfg.bootstrapSize = std::stoi(argv[++i]);
         else { std::cerr << "Unknown argument: " << arg << "\n"; printHelp(argv[0]); return 1; }
     }
 
@@ -356,6 +367,9 @@ int main(int argc, char* argv[]) {
             p->fitnessMode        = cfg.fitnessMode;
             p->accuracyThreshold  = cfg.accuracyThreshold;
             p->encoderType        = cfg.encoderType;
+            p->bootstrapEval      = cfg.bootstrapEval;
+            p->bootstrapN         = cfg.bootstrapN;
+            p->bootstrapSize      = cfg.bootstrapSize;
             probPtr   = std::move(p);
         } else if (cfg.problem == "SparseNN") {
             auto p = std::make_unique<SparseNN>(cfg.dataNo, cfg.nHidden, cfg.dataPath);
