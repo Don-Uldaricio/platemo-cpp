@@ -89,7 +89,10 @@ SAVE_SPIKES=true        # true → guarda _spikes.csv con spike counts del test 
 # Bootstrap resampling fitness evaluation (replica Loyola-Jara et al. 2026)
 BOOTSTRAP_EVAL=false    # true → evaluar fitness sobre subconjuntos aleatorios con reemplazo
 BOOTSTRAP_N=50          # número de subconjuntos bootstrap por evaluación
-BOOTSTRAP_SIZE=50       # muestras por subconjunto
+BOOTSTRAP_SIZE=50       # muestras por subconjunto, en número fijo (fallback manual)
+BOOTSTRAP_SIZE_PCT=0.3  # muestras por subconjunto, como fracción del train set (0-1);
+                        # tiene prioridad sobre BOOTSTRAP_SIZE cuando es > 0
+                        # (así el tamaño del subconjunto escala con cada dataset en vez de ser fijo)
                         #        (necesario para graficar ROC/AUC con plot_roc.py)
                         #        (solo aplica cuando BINARY_OUTPUTS=1)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -158,7 +161,7 @@ run_one() {
     [[ "$SAVE_SPIKES" == "true" ]] && spikes_flag="--spikes-out $spikes_out"
 
     local bootstrap_flags=""
-    [[ "$BOOTSTRAP_EVAL" == "true" ]] && bootstrap_flags="--bootstrap-eval --bootstrap-n $BOOTSTRAP_N --bootstrap-size $BOOTSTRAP_SIZE"
+    [[ "$BOOTSTRAP_EVAL" == "true" ]] && bootstrap_flags="--bootstrap-eval --bootstrap-n $BOOTSTRAP_N --bootstrap-size $BOOTSTRAP_SIZE --bootstrap-size-pct $BOOTSTRAP_SIZE_PCT"
 
     # shellcheck disable=SC2086  # intentional word splitting on $extra_params, $spikes_flag y $bootstrap_flags
     OMP_NUM_THREADS=$OMP_THREADS "$BIN" \
@@ -184,7 +187,7 @@ export "${!MAXFE_@}"    # exporta MAXFE_DEFAULT + todas las entradas MAXFE_<ALGO
 export DISC DISM PROM DISSM PROSM SLOWER SUPPER
 export DT ENCODING_DUR EVAL_DUR MAX_RATE REFRAC
 export BINARY_OUTPUTS FITNESS_MODE ENCODER ACCURACY_THRESHOLD SAVE_SPIKES
-export BOOTSTRAP_EVAL BOOTSTRAP_N BOOTSTRAP_SIZE
+export BOOTSTRAP_EVAL BOOTSTRAP_N BOOTSTRAP_SIZE BOOTSTRAP_SIZE_PCT
 export OMP_THREADS
 
 total=$(( ${#ALGOS[@]} * ${#DATASETS[@]} * ${#NHIDDENS[@]} * RUNS ))

@@ -83,9 +83,10 @@ public:
     EncoderType encoderType    = EncoderType::POISSON;
 
     // Bootstrap resampling fitness evaluation (replicates Loyola-Jara et al. 2026)
-    bool bootstrapEval = false;  // activar evaluación por subconjuntos aleatorios
-    int  bootstrapN    = 50;     // cantidad de subconjuntos por evaluación
-    int  bootstrapSize = 50;     // muestras por subconjunto (con reemplazo)
+    bool   bootstrapEval    = false;  // activar evaluación por subconjuntos aleatorios
+    int    bootstrapN       = 50;     // cantidad de subconjuntos por evaluación
+    int    bootstrapSize    = 50;     // muestras por subconjunto (con reemplazo)
+    double bootstrapSizePct = 0.0;    // si > 0, bootstrapSize = round(pct * |trainDataset|); tiene prioridad sobre bootstrapSize
 
     // Training dataset (80%) and test dataset (20%)
     std::vector<std::pair<std::vector<double>, int>> trainDataset;
@@ -144,17 +145,20 @@ public:
         Matrix obj(n, 2);
 
         // Pre-generate bootstrap indices serially to avoid RNG race conditions in OMP.
-        // Each solution gets bootstrapN subsets of bootstrapSize indices sampled with replacement.
+        // Each solution gets bootstrapN subsets of effBootstrapSize indices sampled with replacement.
         using BSIdx = std::vector<std::vector<std::vector<int>>>;
         BSIdx bsIdx;
+        int effBootstrapSize = bootstrapSize;
         if (bootstrapEval) {
             int nTrain = static_cast<int>(trainDataset.size());
+            if (bootstrapSizePct > 0.0)
+                effBootstrapSize = std::max(1, static_cast<int>(std::round(bootstrapSizePct * nTrain)));
             bsIdx.resize(n);
             for (int i = 0; i < n; i++) {
                 bsIdx[i].resize(bootstrapN);
                 for (int b = 0; b < bootstrapN; b++) {
-                    bsIdx[i][b].resize(bootstrapSize);
-                    for (int k = 0; k < bootstrapSize; k++)
+                    bsIdx[i][b].resize(effBootstrapSize);
+                    for (int k = 0; k < effBootstrapSize; k++)
                         bsIdx[i][b][k] = rng::randint(0, nTrain - 1);
                 }
             }
@@ -179,10 +183,10 @@ public:
             if (bootstrapEval) {
                 double f2_sum = 0.0;
                 std::vector<std::pair<std::vector<double>, int>> subset;
-                subset.reserve(bootstrapSize);
+                subset.reserve(effBootstrapSize);
                 for (int b = 0; b < bootstrapN; b++) {
                     subset.clear();
-                    for (int k = 0; k < bootstrapSize; k++)
+                    for (int k = 0; k < effBootstrapSize; k++)
                         subset.push_back(trainDataset[bsIdx[i][b][k]]);
                     double f2_b;
                     if (nOutputs == 1) {

@@ -58,9 +58,10 @@ struct RunConfig {
     EncoderType encoderType   = EncoderType::POISSON;
 
     // Bootstrap resampling fitness evaluation
-    bool bootstrapEval = false;
-    int  bootstrapN    = 50;
-    int  bootstrapSize = 50;
+    bool   bootstrapEval    = false;
+    int    bootstrapN       = 50;
+    int    bootstrapSize    = 50;
+    double bootstrapSizePct = 0.0;
 };
 
 void printHelp(const char* prog) {
@@ -107,6 +108,7 @@ void printHelp(const char* prog) {
               << "  --bootstrap-eval               Enable bootstrap resampling fitness evaluation\n"
               << "  --bootstrap-n   <int>          Number of bootstrap subsets per evaluation (default: 50)\n"
               << "  --bootstrap-size <int>         Samples per bootstrap subset, with replacement (default: 50)\n"
+              << "  --bootstrap-size-pct <float>   Subset size as fraction of train set (0-1), overrides --bootstrap-size when > 0\n"
               << "\nProblems:\n"
               << "  SparseNN  : Multi-layer ANN with backprop fine-tuning (baseline)\n"
               << "  SparseSNN : Spiking neural network (Izhikevich) evaluated via spike decoding\n"
@@ -324,6 +326,7 @@ int main(int argc, char* argv[]) {
         else if (arg == "--bootstrap-eval")               cfg.bootstrapEval = true;
         else if (arg == "--bootstrap-n"    && i+1 < argc) cfg.bootstrapN    = std::stoi(argv[++i]);
         else if (arg == "--bootstrap-size" && i+1 < argc) cfg.bootstrapSize = std::stoi(argv[++i]);
+        else if (arg == "--bootstrap-size-pct" && i+1 < argc) cfg.bootstrapSizePct = std::stod(argv[++i]);
         else { std::cerr << "Unknown argument: " << arg << "\n"; printHelp(argv[0]); return 1; }
     }
 
@@ -370,6 +373,7 @@ int main(int argc, char* argv[]) {
             p->bootstrapEval      = cfg.bootstrapEval;
             p->bootstrapN         = cfg.bootstrapN;
             p->bootstrapSize      = cfg.bootstrapSize;
+            p->bootstrapSizePct   = cfg.bootstrapSizePct;
             probPtr   = std::move(p);
         } else if (cfg.problem == "SparseNN") {
             auto p = std::make_unique<SparseNN>(cfg.dataNo, cfg.nHidden, cfg.dataPath);
