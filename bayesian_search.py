@@ -7,10 +7,8 @@ Outer loop: Optuna proposes hyperparameter configs and maximizes the mean
 Inner loop: one call to ./build/platemo_cpp per (trial × nhidden) combination.
 
 Architecture IDs:
-    1 — ROC/AUC + 1 output neuron + Poisson encoder + threshold decoder
-    2 — Accuracy + 2 output neurons + Poisson encoder + classification (WTA) decoder
-    3 — Accuracy + 2 output neurons + TTFS encoder + classification (WTA) decoder
-    4 — ROC/AUC + 1 output neuron + TTFS encoder + threshold decoder
+    1 — Accuracy + 2 output neurons + Poisson encoder + classification (WTA) decoder
+    2 — Accuracy + 2 output neurons + TTFS encoder + classification (WTA) decoder
 
 Usage:
     python bayesian_search.py [options]
@@ -35,15 +33,13 @@ from pathlib import Path
 BINARY = Path(__file__).parent / "build" / "platemo_cpp"
 
 # Architecture definitions: fitness_mode, binary_outputs, encoder
+# AUC-based architectures (1 output neuron + threshold decoder) have been excluded
+# from the search — only accuracy-based (WTA) architectures are explored.
 ARCHITECTURES = {
-    1: dict(fitness_mode="auc",      binary_outputs=1, encoder="poisson",
-            label="arch1_auc_poisson"),
-    2: dict(fitness_mode="accuracy", binary_outputs=2, encoder="poisson",
-            label="arch2_acc_poisson"),
-    3: dict(fitness_mode="accuracy", binary_outputs=2, encoder="ttfs",
-            label="arch3_acc_ttfs"),
-    4: dict(fitness_mode="auc",      binary_outputs=1, encoder="ttfs",
-            label="arch4_auc_ttfs"),
+    1: dict(fitness_mode="accuracy", binary_outputs=2, encoder="poisson",
+            label="arch1_acc_poisson"),
+    2: dict(fitness_mode="accuracy", binary_outputs=2, encoder="ttfs",
+            label="arch2_acc_ttfs"),
 }
 
 # nHidden values evaluated per trial — hyperparameters are optimized for robustness
@@ -330,7 +326,7 @@ def main():
     print("=" * 60)
     print(f"  Algorithm    : {args.algo}")
     print(f"  Dataset      : {args.dataset}  ({nfeatures} features)")
-    print(f"  Architecture : hyperparameter (1=AUC/Poisson, 2=Acc/Poisson, 3=Acc/TTFS, 4=AUC/TTFS)")
+    print(f"  Architecture : hyperparameter (1=Acc/Poisson, 2=Acc/TTFS)")
     print(f"  nHidden eval : {NHIDDENS_EVAL}")
     print(f"  PopSize      : {args.popsize}")
     print(f"  MaxFE        : {args.maxfe}")

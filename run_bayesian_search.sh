@@ -4,11 +4,9 @@
 # usando GNU parallel. Cada estudio tiene su propia SQLite DB → sin contención de escritura.
 # Retomar estudios interrumpidos: simplemente volver a ejecutar el script (load_if_exists=True).
 #
-# Arquitecturas disponibles:
-#   1 — ROC/AUC + 1 output neuron + Poisson encoder + threshold decoder
-#   2 — Accuracy + 2 output neurons + Poisson encoder + classification (WTA) decoder
-#   3 — Accuracy + 2 output neurons + TTFS encoder + classification (WTA) decoder
-#   4 — ROC/AUC + 1 output neuron + TTFS encoder + threshold decoder
+# Arquitecturas disponibles (solo accuracy — las variantes ROC/AUC fueron excluidas):
+#   1 — Accuracy + 2 output neurons + Poisson encoder + classification (WTA) decoder
+#   2 — Accuracy + 2 output neurons + TTFS encoder + classification (WTA) decoder
 #
 # Dentro de cada trial, el script Python evalúa el candidato con múltiples nHidden
 # (20, 100, 200) y retorna el HV medio — los hiperparámetros elegidos son robustos
@@ -78,7 +76,7 @@ echo "Output directory : $OUTDIR"
 echo "Studies          : $total  (${#ALGOS[@]} algos × ${#DATASETS[@]} datasets)"
 echo "Parallel jobs    : $JOBS"
 echo "Trials per study : $TRIALS  (MAXFE=$MAXFE, POPSIZE=$POPSIZE, mode=$MODE)"
-echo "Arquitectura     : hiperparámetro por trial (1=AUC/Poisson, 2=Acc/Poisson, 3=Acc/TTFS, 4=AUC/TTFS)"
+echo "Arquitectura     : hiperparámetro por trial (1=Acc/Poisson, 2=Acc/TTFS)"
 echo "nHidden por trial: $NHIDDENS_STR (HV medio — robusto a tamaño de red)"
 echo ""
 
