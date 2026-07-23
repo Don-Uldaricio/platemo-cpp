@@ -39,3 +39,8 @@ add_executable(platemo_cpp src/main.cpp)
 target_include_directories(platemo_cpp PRIVATE include ${SNN_ROOT}/include)
 target_link_libraries(platemo_cpp PRIVATE Eigen3::Eigen snn_libs OpenMP::OpenMP_CXX)
 target_compile_options(platemo_cpp PRIVATE -O2 -Wall)
+
+add_executable(moea_overhead_bench tools/moea_overhead_bench.cpp)
+target_include_directories(moea_overhead_bench PRIVATE include ${SNN_ROOT}/include)
+target_link_libraries(moea_overhead_bench PRIVATE Eigen3::Eigen OpenMP::OpenMP_CXX)
+target_compile_options(moea_overhead_bench PRIVATE -O2 -Wall)
