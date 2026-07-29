@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Resultados de la b&uacute;squeda de hiperpar&aacute;metros</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+            
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <span id="markdown-mermaid" aria-hidden="true" data-config="{&quot;darkModeTheme&quot;:&quot;vscode&quot;,&quot;lightModeTheme&quot;:&quot;vscode&quot;,&quot;maxTextSize&quot;:50000,&quot;clickDrag&quot;:&quot;alt&quot;,&quot;showControls&quot;:&quot;onHoverOrFocus&quot;,&quot;resizable&quot;:true,&quot;maxHeight&quot;:&quot;&quot;}"></span>
+				<h1 id="resultados-de-la-búsqueda-de-hiperparámetros">Resultados de la búsqueda de hiperparámetros</h1>
+<h2 id="resumen-general">Resumen general</h2>
+<p>Siguiendo la metodología descrita (búsqueda bayesiana con Optuna/TPE en un bucle externo sobre el SMOEA correspondiente), se ejecutaron <strong>8 estudios independientes</strong>, uno por cada combinación algoritmo × dataset (S-NSGA-II y MOEA-CKF, sobre ds1–ds4). Cada estudio constó de <strong>60 trials</strong>, con un presupuesto <code>maxFE</code> fijo por dataset y compartido entre ambos algoritmos (ds1 = 9900, ds2 = 11500, ds3 = 13900, ds4 = 28300), y cada trial se evaluó promediando el HV sobre tres tamaños de capa oculta (20, 40 y 80 neuronas), tal como se especifica en el protocolo de evaluación por trial.</p>
+<p>La Tabla 1 resume el mejor resultado obtenido por cada estudio.</p>
+<p><strong>Tabla 1. Mejor HV medio (sobre 20/40/80 neuronas) por algoritmo y dataset.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th>Features</th>
+<th>maxFE</th>
+<th>Algoritmo</th>
+<th>Mejor HV medio</th>
+<th>Trial ganador</th>
+<th>Arquitectura ganadora</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ds1</td>
+<td>14</td>
+<td>9 900</td>
+<td>MOEA-CKF</td>
+<td>0.8704</td>
+<td>#55</td>
+<td>Accuracy / 2 salidas WTA / Poisson</td>
+</tr>
+<tr>
+<td>ds1</td>
+<td>14</td>
+<td>9 900</td>
+<td>S-NSGA-II</td>
+<td>0.8725</td>
+<td>#10</td>
+<td>Accuracy / 2 salidas WTA / TTFS</td>
+</tr>
+<tr>
+<td>ds2</td>
+<td>18</td>
+<td>11 500</td>
+<td>MOEA-CKF</td>
+<td>0.9279</td>
+<td>#42</td>
+<td>Accuracy / 2 salidas WTA / TTFS</td>
+</tr>
+<tr>
+<td>ds2</td>
+<td>18</td>
+<td>11 500</td>
+<td>S-NSGA-II</td>
+<td>0.9276</td>
+<td>#58</td>
+<td>Accuracy / 2 salidas WTA / Poisson</td>
+</tr>
+<tr>
+<td>ds3</td>
+<td>24</td>
+<td>13 900</td>
+<td>MOEA-CKF</td>
+<td>0.7540</td>
+<td>#2</td>
+<td>Accuracy / 2 salidas WTA / Poisson</td>
+</tr>
+<tr>
+<td>ds3</td>
+<td>24</td>
+<td>13 900</td>
+<td>S-NSGA-II</td>
+<td>0.7704</td>
+<td>#22</td>
+<td>Accuracy / 2 salidas WTA / TTFS</td>
+</tr>
+<tr>
+<td>ds4</td>
+<td>60</td>
+<td>28 300</td>
+<td>MOEA-CKF</td>
+<td>0.8051</td>
+<td>#53</td>
+<td>Accuracy / 2 salidas WTA / TTFS</td>
+</tr>
+<tr>
+<td>ds4</td>
+<td>60</td>
+<td>28 300</td>
+<td>S-NSGA-II</td>
+<td>0.8134</td>
+<td>#28</td>
+<td>Accuracy / 2 salidas WTA / TTFS</td>
+</tr>
+</tbody>
+</table>
+<p>En los ocho estudios, la configuración ganadora final corresponde siempre a una arquitectura de <strong>dos neuronas de salida con decodificación WTA y métrica de exactitud</strong>, ya sea con encoder Poisson o TTFS; ninguna arquitectura de una sola neurona de salida evaluada por AUC resultó ganadora en ningún estudio (ver más abajo el detalle de ds2, el único dataset donde esa alternativa formó parte del espacio de búsqueda).</p>
+<h2 id="detalle-de-hiperparámetros-ganadores-por-estudio">Detalle de hiperparámetros ganadores por estudio</h2>
+<p><strong>Tabla 2. Hiperparámetros de la mejor configuración por estudio.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parámetro</th>
+<th>ds1‑CKF</th>
+<th>ds1‑NSGA</th>
+<th>ds2‑CKF</th>
+<th>ds2‑NSGA</th>
+<th>ds3‑CKF</th>
+<th>ds3‑NSGA</th>
+<th>ds4‑CKF</th>
+<th>ds4‑NSGA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>disC</td>
+<td>78.64</td>
+<td>5.09</td>
+<td>10.00</td>
+<td>7.21</td>
+<td>38.83</td>
+<td>74.99</td>
+<td>98.25</td>
+<td>97.99</td>
+</tr>
+<tr>
+<td>disM</td>
+<td>7.74</td>
+<td>91.28</td>
+<td>15.46</td>
+<td>60.12</td>
+<td>18.69</td>
+<td>45.30</td>
+<td>76.13</td>
+<td>68.53</td>
+</tr>
+<tr>
+<td>proM</td>
+<td>0.86</td>
+<td>2.11</td>
+<td>2.04</td>
+<td>0.64</td>
+<td>0.63</td>
+<td>2.34</td>
+<td>2.20</td>
+<td>1.68</td>
+</tr>
+<tr>
+<td>disSM</td>
+<td>16.24</td>
+<td>92.32</td>
+<td>64.03</td>
+<td>9.83</td>
+<td>22.04</td>
+<td>56.14</td>
+<td>89.36</td>
+<td>74.65</td>
+</tr>
+<tr>
+<td>proSM</td>
+<td>1.63</td>
+<td>2.75</td>
+<td>0.40</td>
+<td>2.36</td>
+<td>0.39</td>
+<td>1.76</td>
+<td>1.84</td>
+<td>2.37</td>
+</tr>
+<tr>
+<td>sLower</td>
+<td>0.515</td>
+<td>0.565</td>
+<td>0.778</td>
+<td>0.844</td>
+<td>0.909</td>
+<td>0.606</td>
+<td>0.617</td>
+<td>0.587</td>
+</tr>
+<tr>
+<td>sGap</td>
+<td>0.123</td>
+<td>0.054</td>
+<td>0.062</td>
+<td>0.280</td>
+<td>0.115</td>
+<td>0.158</td>
+<td>0.193</td>
+<td>0.265</td>
+</tr>
+<tr>
+<td>sUpper (derivado)</td>
+<td>0.638</td>
+<td>0.619</td>
+<td>0.840</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.765</td>
+<td>0.810</td>
+<td>0.852</td>
+</tr>
+<tr>
+<td>wScale</td>
+<td>41.29</td>
+<td>41.02</td>
+<td>6.74</td>
+<td>29.33</td>
+<td>13.35</td>
+<td>29.29</td>
+<td>28.47</td>
+<td>32.70</td>
+</tr>
+<tr>
+<td>dt (ms)</td>
+<td>1.0</td>
+<td>0.1</td>
+<td>0.1</td>
+<td>1.0</td>
+<td>2.0</td>
+<td>0.1</td>
+<td>0.1</td>
+<td>0.1</td>
+</tr>
+<tr>
+<td>encoding_duration</td>
+<td>80</td>
+<td>150</td>
+<td>100</td>
+<td>60</td>
+<td>120</td>
+<td>30</td>
+<td>70</td>
+<td>110</td>
+</tr>
+<tr>
+<td>extra_eval</td>
+<td>150</td>
+<td>120</td>
+<td>100</td>
+<td>50</td>
+<td>190</td>
+<td>10</td>
+<td>70</td>
+<td>90</td>
+</tr>
+<tr>
+<td>evaluation_duration (derivado)</td>
+<td>230</td>
+<td>270</td>
+<td>200</td>
+<td>110</td>
+<td>310</td>
+<td>40</td>
+<td>140</td>
+<td>200</td>
+</tr>
+<tr>
+<td>encoder ganador</td>
+<td>Poisson</td>
+<td>TTFS</td>
+<td>TTFS</td>
+<td>Poisson</td>
+<td>Poisson</td>
+<td>TTFS</td>
+<td>TTFS</td>
+<td>TTFS</td>
+</tr>
+<tr>
+<td>max_rate (solo Poisson)</td>
+<td>57.30</td>
+<td>—</td>
+<td>—</td>
+<td>55.09</td>
+<td>156.98</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>refractory_period (solo Poisson)</td>
+<td>1</td>
+<td>—</td>
+<td>—</td>
+<td>4</td>
+<td>3</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><em>(CKF = MOEA-CKF, NSGA = S-NSGA-II)</em></p>
+<h2 id="caso-particular-ds2-y-el-espacio-de-arquitecturas-de-4-vías">Caso particular: ds2 y el espacio de arquitecturas de 4 vías</h2>
+<p>El estudio de ds2 se ejecutó antes de que el pipeline experimental redujera la variable categórica <code>architecture</code> a solo las dos alternativas de dos neuronas de salida. En consecuencia, para ds2 el optimizador TPE exploró efectivamente <strong>4 arquitecturas</strong>: (1) AUC/1 salida/Poisson, (2) Accuracy/2 salidas WTA/Poisson, (3) Accuracy/2 salidas WTA/TTFS y (4) AUC/1 salida/TTFS.</p>
+<p>La Tabla 3 muestra cuántos de los 60 trials cayeron en cada arquitectura, para cada algoritmo.</p>
+<p><strong>Tabla 3. Distribución de trials por arquitectura en ds2 (60 trials totales por algoritmo).</strong></p>
+<table>
+<thead>
+<tr>
+<th>Arquitectura</th>
+<th>MOEA-CKF</th>
+<th>S-NSGA-II</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 — AUC / 1 salida / Poisson</td>
+<td>6</td>
+<td>6</td>
+</tr>
+<tr>
+<td>2 — Accuracy / 2 salidas WTA / Poisson</td>
+<td>20</td>
+<td>40</td>
+</tr>
+<tr>
+<td>3 — Accuracy / 2 salidas WTA / TTFS</td>
+<td>26</td>
+<td>6</td>
+</tr>
+<tr>
+<td>4 — AUC / 1 salida / TTFS</td>
+<td>8</td>
+<td>8</td>
+</tr>
+</tbody>
+</table>
+<p>A pesar de que las arquitecturas de una sola salida (1 y 4) sí fueron muestreadas por TPE en ambos estudios, <strong>ninguna de las dos produjo nunca el mejor trial</strong>: el ganador de MOEA-CKF fue la arquitectura 3 (HV = 0.9279) y el de S-NSGA-II la arquitectura 2 (HV = 0.9276). Esto se puede apreciar en las Figuras 1 y 2: los trials con arquitectura de una salida quedan agrupados en la banda baja (HV ≈ 0.64–0.83), mientras que los trials con arquitectura de dos salidas se concentran en una banda alta y estrecha (HV ≈ 0.91–0.93), con una separación clara entre ambos grupos.</p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/bo_results/figures_tesis/convergencia_MOEACKF_ds2.png" alt="Figura 1. Convergencia del HV medio — ds2 — MOEA-CKF">
+<em>Figura 1. Convergencia del HV medio por trial — ds2, MOEA-CKF.</em></p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/bo_results/figures_tesis/convergencia_SNSGAII_ds2.png" alt="Figura 2. Convergencia del HV medio — ds2 — S-NSGA-II">
+<em>Figura 2. Convergencia del HV medio por trial — ds2, S-NSGA-II.</em></p>
+<p>Los resultados mencionados se pueden observar también en las Figuras 3 y 4, donde <code>architecture</code> explica entre el 72 % y el 94 % de la varianza del HV en ds2 — muy por encima de cualquier otro hiperparámetro.</p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/bo_results/figures_tesis/importancia_MOEACKF_ds2.png" alt="Figura 3. Importancia de hiperparámetros — ds2 — MOEA-CKF">
+<em>Figura 3. Importancia de hiperparámetros (fANOVA) — ds2, MOEA-CKF.</em></p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/bo_results/figures_tesis/importancia_SNSGAII_ds2.png" alt="Figura 4. Importancia de hiperparámetros — ds2 — S-NSGA-II">
+<em>Figura 4. Importancia de hiperparámetros (fANOVA) — ds2, S-NSGA-II.</em></p>
+<p>Este resultado empírico en ds2 es, en la práctica, el que motivó restringir el espacio de búsqueda a únicamente las dos arquitecturas de dos salidas para los estudios posteriores de ds1, ds3 y ds4: dado que las variantes de una sola salida evaluadas por AUC no resultaron competitivas en ningún caso, mantenerlas en el espacio de búsqueda solo diluye el presupuesto de trials sin aportar candidatos viables.</p>
+<hr>
+<h1 id="análisis-y-discusión-de-resultados">Análisis y discusión de resultados</h1>
+<h2 id="hv-alcanzado-por-dataset">HV alcanzado por dataset</h2>
+<p>El HV medio alcanzado por la mejor configuración varía considerablemente entre datasets: ds2 (≈0.93) &gt; ds1 (≈0.87) &gt; ds4 (≈0.81) &gt; ds3 (≈0.75). Esta ordenación no sigue una relación monótona con el número de atributos de entrada (14, 18, 24 y 60 respectivamente para ds1–ds4): ds2, con 18 atributos, obtiene el HV más alto de los cuatro, mientras que ds3, con 24, obtiene el más bajo, y ds4, con 60 atributos (el más grande), se ubica en un punto intermedio. Esto sugiere que la dificultad efectiva del problema de clasificación de cada dataset domina por sobre la sola dimensionalidad de entrada a la hora de explicar el HV alcanzable, algo esperable dado que el HV combina exactitud (o AUC) y esparsidad, y no solo la primera. En cualquier caso, la equidad de la comparación entre datasets está resguardada porque, para cada dataset, ambos algoritmos comparten exactamente el mismo <code>maxFE</code> y el mismo protocolo de evaluación (Tabla 1), de modo que las diferencias de HV entre datasets reflejan la dificultad relativa del problema de clasificación subyacente y no una asimetría del presupuesto de búsqueda.</p>
+<h2 id="moea-ckf-vs-s-nsga-ii">MOEA-CKF vs. S-NSGA-II</h2>
+<p>En 3 de los 4 datasets (ds1, ds3 y ds4), S-NSGA-II obtuvo un HV medio ligeramente superior al de MOEA-CKF en la configuración ganadora (diferencias de 0.002 a 0.016 en HV), mientras que en ds2 la relación se invierte levemente a favor de MOEA-CKF (0.9279 vs. 0.9276, una diferencia de apenas 0.0003 que no es relevante en términos prácticos, ver Figuras 1 y 2). Cabe subrayar que estas cifras corresponden al <strong>mejor trial de un único estudio de búsqueda de hiperparámetros</strong> — no a una comparación estadística entre múltiples corridas independientes de los algoritmos con esa configuración fija, que es lo que se reserva para la fase experimental posterior. Por lo tanto, estas diferencias no deben interpretarse todavía como evidencia de que un algoritmo domine sistemáticamente al otro, sino únicamente como que, bajo el mismo presupuesto de búsqueda de hiperparámetros, ambos alcanzan un HV comparable, lo que valida que el espacio de búsqueda y el presupuesto definidos son igualmente aprovechables por ambos SMOEA.</p>
+<p>En ds1, la diferencia entre algoritmos (0.8704 vs. 0.8725) es mínima y ambos estudios convergen con estabilidad hacia el final de los 60 trials. Esto se puede apreciar en las Figuras 5 y 6.</p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/bo_results/figures_tesis/convergencia_MOEACKF_ds1.png" alt="Figura 5. Convergencia del HV medio — ds1 — MOEA-CKF">
+<em>Figura 5. Convergencia del HV medio por trial — ds1, MOEA-CKF.</em></p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/bo_results/figures_tesis/convergencia_SNSGAII_ds1.png" alt="Figura 6. Convergencia del HV medio — ds1 — S-NSGA-II">
+<em>Figura 6. Convergencia del HV medio por trial — ds1, S-NSGA-II.</em></p>
+<p>En ds3, S-NSGA-II supera a MOEA-CKF por el margen más amplio de los cuatro datasets (0.7704 vs. 0.7540). Los resultados mencionados se pueden observar en las Figuras 7 y 8.</p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/bo_results/figures_tesis/convergencia_MOEACKF_ds3.png" alt="Figura 7. Convergencia del HV medio — ds3 — MOEA-CKF">
+<em>Figura 7. Convergencia del HV medio por trial — ds3, MOEA-CKF.</em></p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/bo_results/figures_tesis/convergencia_SNSGAII_ds3.png" alt="Figura 8. Convergencia del HV medio — ds3 — S-NSGA-II">
+<em>Figura 8. Convergencia del HV medio por trial — ds3, S-NSGA-II.</em></p>
+<p>En ds4, ambos algoritmos alcanzan un HV cercano (0.8051 vs. 0.8134), con trayectorias de convergencia similares entre sí, tal como se observa en las Figuras 9 y 10.</p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/bo_results/figures_tesis/convergencia_MOEACKF_ds4.png" alt="Figura 9. Convergencia del HV medio — ds4 — MOEA-CKF">
+<em>Figura 9. Convergencia del HV medio por trial — ds4, MOEA-CKF.</em></p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/bo_results/figures_tesis/convergencia_SNSGAII_ds4.png" alt="Figura 10. Convergencia del HV medio — ds4 — S-NSGA-II">
+<em>Figura 10. Convergencia del HV medio por trial — ds4, S-NSGA-II.</em></p>
+<h2 id="tendencias-en-los-hiperparámetros-ganadores">Tendencias en los hiperparámetros ganadores</h2>
+<p>Algunas regularidades emergen al comparar la Tabla 2 entre estudios:</p>
+<ul>
+<li><strong>Paso de integración (<code>dt</code>)</strong>: en 6 de los 8 estudios la mejor configuración adoptó el valor más fino disponible, <code>dt = 0.1</code> ms; solo ds1-CKF (<code>dt=1.0</code>) y ds3-CKF (<code>dt=2.0</code>) se alejan de ese valor. Esto sugiere que, en general, una mayor resolución temporal de la simulación de Izhikevich favorece el HV, aunque no de forma absoluta — hay al menos un caso por algoritmo donde un <code>dt</code> más grueso resultó igualmente competitivo, posiblemente porque MOEA-CKF explota su análisis previo (Prior Analysis) para compensar la pérdida de resolución con otros ajustes (p. ej. <code>wScale</code>, <code>sLower</code>).</li>
+<li><strong>Escala de pesos (<code>wScale</code>)</strong>: los valores ganadores son considerablemente más dispersos, desde 6.7 (ds2-CKF) hasta 41.3 (ds1-CKF). <code>wScale</code> es, junto con <code>architecture</code>, el hiperparámetro más importante según el análisis fANOVA en 6 de los 8 estudios (ver más abajo), lo que es consistente con el rol que se le atribuye en la metodología: amplificar pesos codificados en [0,1] hasta una escala que efectivamente provoque disparos en la red — su valor óptimo depende fuertemente de la escala de entrada y de la arquitectura de cada dataset, por lo que no se observa un valor único &quot;universal&quot;.</li>
+<li><strong>Banda de esparsidad (<code>sLower</code>/<code>sUpper</code>)</strong>: las bandas ganadoras cubren un rango amplio, desde redes relativamente densas orientadas hacia baja esparsidad (<code>sLower≈0.52–0.61</code> en ds1 y ds4) hasta redes muy esparsas (<code>sLower≈0.78–0.91</code> en ds2 y ds3-CKF). No se observa una banda común entre datasets, lo que respalda la decisión metodológica de tratar <code>sLower</code>/<code>sGap</code> como hiperparámetros a optimizar en vez de fijarlos a priori.</li>
+<li><strong>Duración de evaluación (<code>evaluation_duration</code>)</strong>: varía de 40 (ds3-NSGA) a 310 pasos (ds3-CKF) — el rango más amplio entre todos los hiperparámetros continuos/discretos, y sin relación aparente con el tamaño del dataset. Esto indica que la ventana temporal necesaria para que la evidencia se propague hasta las neuronas de salida es altamente dependiente tanto del dataset como del algoritmo evolutivo empleado, y confirma la pertinencia de haberla incluido en el espacio de búsqueda en lugar de fijarla.</li>
+<li><strong>Encoder ganador</strong>: de los 8 estudios, 5 seleccionaron TTFS y 3 seleccionaron Poisson como configuración final; no hay una preferencia dominante de un encoder sobre el otro a nivel agregado, lo que sugiere que su conveniencia es específica de cada combinación algoritmo-dataset y refuerza la necesidad de tratar la arquitectura como una decisión estructural no relajable, tal como se planteó en la metodología.</li>
+</ul>
+<h2 id="importancia-de-hiperparámetros">Importancia de hiperparámetros</h2>
+<p>El análisis fANOVA muestra un patrón claro y consistente con la sección anterior:</p>
+<ul>
+<li>En <strong>ds2</strong>, <code>architecture</code> domina absolutamente la varianza del HV (72–94 % según el algoritmo), reflejo directo de la brecha de rendimiento entre arquitecturas de una y dos salidas discutida más arriba (ver Figuras 3 y 4).</li>
+<li>En <strong>ds1 y ds3</strong>, <code>wScale</code> es el hiperparámetro más influyente en 3 de los 4 estudios (73–96 % de importancia); la excepción es S-NSGA-II en ds1, donde <code>wScale</code> (52 %) y <code>sLower</code> (39 %) se reparten casi toda la varianza explicada. Esto es consistente con el rol de <code>wScale</code> como amplificador necesario para que las conexiones codificadas en [0,1] logren provocar disparos. Esto se puede apreciar en las Figuras 11 a 14.</li>
+</ul>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/bo_results/figures_tesis/importancia_MOEACKF_ds1.png" alt="Figura 11. Importancia de hiperparámetros — ds1 — MOEA-CKF">
+<em>Figura 11. Importancia de hiperparámetros (fANOVA) — ds1, MOEA-CKF.</em></p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/bo_results/figures_tesis/importancia_SNSGAII_ds1.png" alt="Figura 12. Importancia de hiperparámetros — ds1 — S-NSGA-II">
+<em>Figura 12. Importancia de hiperparámetros (fANOVA) — ds1, S-NSGA-II.</em></p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/bo_results/figures_tesis/importancia_MOEACKF_ds3.png" alt="Figura 13. Importancia de hiperparámetros — ds3 — MOEA-CKF">
+<em>Figura 13. Importancia de hiperparámetros (fANOVA) — ds3, MOEA-CKF.</em></p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/bo_results/figures_tesis/importancia_SNSGAII_ds3.png" alt="Figura 14. Importancia de hiperparámetros — ds3 — S-NSGA-II">
+<em>Figura 14. Importancia de hiperparámetros (fANOVA) — ds3, S-NSGA-II.</em></p>
+<ul>
+<li>En <strong>ds4</strong>, la importancia está más repartida y además difiere entre algoritmos: en MOEA-CKF domina <code>architecture</code> (34 %) seguido de <code>wScale</code> (22 %) y <code>dt</code> (10 %), mientras que en S-NSGA-II domina <code>sLower</code> (41 %) seguido de <code>wScale</code> (17 %) y <code>disC</code> (12 %). Es el dataset con más atributos de entrada (60) y también el que exhibe el espacio de decisión más &quot;plano&quot; y menos consistente entre algoritmos, donde ningún hiperparámetro concentra por sí solo la mayor parte de la mejora de HV. Los resultados mencionados se pueden observar en las Figuras 15 y 16.</li>
+</ul>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/bo_results/figures_tesis/importancia_MOEACKF_ds4.png" alt="Figura 15. Importancia de hiperparámetros — ds4 — MOEA-CKF">
+<em>Figura 15. Importancia de hiperparámetros (fANOVA) — ds4, MOEA-CKF.</em></p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/bo_results/figures_tesis/importancia_SNSGAII_ds4.png" alt="Figura 16. Importancia de hiperparámetros — ds4 — S-NSGA-II">
+<em>Figura 16. Importancia de hiperparámetros (fANOVA) — ds4, S-NSGA-II.</em></p>
+<p>En conjunto, estos resultados indican que la elección de arquitectura (cuando forma parte del espacio, como en ds2) y la escala de pesos (<code>wScale</code>) son sistemáticamente los factores de mayor impacto sobre el HV, mientras que los operadores de variación del SMOEA (<code>disC</code>, <code>disM</code>, <code>proM</code>, <code>disSM</code>, <code>proSM</code>) tienen, de manera individual, un efecto marginal frente a estos dos — aunque su ajuste conjunto sigue siendo necesario para alcanzar el óptimo, como lo evidencia que ninguno de los 8 estudios convergiera a los mismos valores para estos operadores.</p>
+<h2 id="limitación-metodológica-asimetría-del-espacio-de-búsqueda-en-ds2">Limitación metodológica: asimetría del espacio de búsqueda en ds2</h2>
+<p>Un punto a señalar explícitamente para preservar la transparencia de la comparación entre datasets es que, a diferencia de ds1, ds3 y ds4 (donde los 60 trials se repartieron íntegramente entre 2 arquitecturas), en ds2 el mismo presupuesto de 60 trials se repartió entre <strong>4</strong> arquitecturas. En la práctica esto significa que el número efectivo de trials invertidos en la región competitiva del espacio (arquitecturas de 2 salidas) fue menor en ds2 que en los demás datasets — por ejemplo, S-NSGA-II en ds2 invirtió 46 de 60 trials en arquitecturas de 2 salidas (40+6), frente a los 60 de 60 en ds1, ds3 y ds4. Esto no invalida el resultado de ds2, ya que la configuración ganadora final sigue siendo comparable en naturaleza a la de los demás datasets (arquitectura de 2 salidas, exactitud, WTA); sin embargo, es una asimetría real en la eficiencia de la búsqueda que conviene explicitar como limitación al comparar el HV de ds2 con el de los demás datasets, más que como una diferencia atribuible únicamente a la dificultad intrínseca del dataset.</p>
+
+            
+            
+        </body>
+        </html>
