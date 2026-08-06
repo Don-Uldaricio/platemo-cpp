@@ -1,0 +1,3 @@
+dataset,angle,metric,group,n,median,iqr_low,iqr_high,mean,std,shapiro_p,test,p_value,a12,significant_alpha_0.05
+4,time,time_s,MOEACKF,15,715.0597,525.9377,865.23645,747.42264,259.5051209930543,0.07145687937736511,wilcoxon,,,
+4,time,time_s,SNSGAII,15,295.4588,293.97305,298.16515,295.67729333333335,4.080456355687024,0.585457980632782,wilcoxon,6.103515625e-05,1.0,True

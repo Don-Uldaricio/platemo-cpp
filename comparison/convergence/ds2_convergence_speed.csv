@@ -1,0 +1,5 @@
+dataset,angle,metric,group,n,median,iqr_low,iqr_high,mean,std,shapiro_p,test,p_value,a12,significant_alpha_0.05
+2,convergence_speed,fe95,MOEACKF,31,0.0,0.0,127.38853503184714,73.96753647010478,85.60783503595503,6.3046413742995355e-06,wilcoxon,,,
+2,convergence_speed,fe95,SNSGAII,31,0.0,0.0,0.0,9.726049602852974,39.8209734896914,2.480730031118039e-11,wilcoxon,0.00047509003621023875,0.6935483870967742,True
+2,convergence_speed_sensitivity,fe90,MOEACKF,31,0.0,0.0,0.0,0.0,0.0,1.0,wilcoxon,,,
+2,convergence_speed_sensitivity,fe90,SNSGAII,31,0.0,0.0,0.0,0.0,0.0,1.0,wilcoxon,1.0,0.5,False

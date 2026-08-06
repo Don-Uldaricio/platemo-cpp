@@ -1,0 +1,2 @@
+dataset,angle,metric,n_front_moeackf,n_front_snsgaii,c_moeackf_covers_snsgaii,c_snsgaii_covers_moeackf
+2,fronts_combined,c_metric,8,4,0.5,0.5

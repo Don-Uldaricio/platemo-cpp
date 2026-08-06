@@ -1,0 +1,725 @@
+\section{Resultados y discusión de comparación de algoritmos}
+\label{sec:resultados-discusion}
+
+Los resultados y el análisis se presentan agrupados por dataset (Secciones~\ref{sec:ds1}--\ref{sec:ds4}). Dentro de cada dataset se distinguen los dos estudios de la Sección~\ref{sec:metodologia-comparacion}: el \textbf{Estudio 1} compara MOEA-CKF y S-NSGA-II, ambos ejecutados en SNN (C++), mediante tres experimentos --- (1) hipervolumen (HV) principal, (2) frentes de Pareto (complejidad vs.\ error) y (3) convergencia --- sobre el conjunto experimental de referencia; y el \textbf{Estudio 2} compara ese mismo algoritmo entre la plataforma SNN (C++) y la implementación ANN original (MATLAB/PlatEMO) (enfoque 4). Los \textbf{otros experimentos} (Sección~\ref{sec:otros-resultados}), que evalúan el remuestreo y el tiempo de cómputo bajo hiperparámetros compartidos y hardware equitativo (enfoques 5--6), se presentan de forma consolidada para los cuatro datasets en lugar de repetirse por dataset. Los enfoques 1--3 (Estudio 1) y el enfoque 5 (remuestreo) están pareados por semilla y se evaluaron con Wilcoxon signed-rank más \Atwelve\ pareado; el enfoque 4 (Estudio 2, plataforma), en cambio, no comparte semilla entre implementaciones y por eso se evaluó con Mann-Whitney U más \Atwelve\ no pareado. En todos los casos el análisis se realizó por cada dataset, dado que nunca se combinan en una misma prueba estadística. Los p-valores reportados en cada tabla son crudos y se marcaron con \texttt{*} cuando resultaron significativos a $\alpha=0.05$ antes de corrección. El veredicto final, obtenido tras aplicar la corrección de Holm-Bonferroni por familias (Sección \ref{subsec:pruebas-estadisticas-correccion}) se menciona en el texto como \textit{tras corrección}. La \textit{accuracy} de test no se incluye porque constituye una limitación estructural de los datos archivados (ver \ref{sec:limitaciones}), y no un dato pendiente de calcular. Por último, las tablas reportaron mediana e IQR como estadístico principal en lugar de media $\pm$ DE, debido a que varios grupos no distribuyen normal (test de Shapiro-Wilk) y porque la mediana es el estadístico consistente con los tests no paramétricos empleados en todo el documento y la literatura de los algoritmos. Para detalles sobre la media, la desviación estándar y el propio test de normalidad, revisar el repositorio del proyecto.
+
+\subsection{Dataset 1: Statlog Australian}
+\label{sec:ds1}
+
+\subsubsection{Estudio 1: Comparación de algoritmos en SNN (C++)}
+\label{sec:ds1-estudio1}
+
+\textbf{Hipervolumen (HV).}\label{sec:ds1-hv}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Hipervolumen (HV) de MOEA-CKF y S-NSGA-II en el dataset 1 (Statlog Australian), $N=31$
+corridas pareadas por semilla.}
+\label{tab:hv-ds1}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Algoritmo} & \textbf{N} & \textbf{Mediana [IQR]} \\
+\midrule
+MOEA-CKF & 31 & $0.8721\ [0.8704,\,0.8721]$ \\
+S-NSGA-II & 31 & $0.8767\ [0.8702,\,0.8856]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Los resultados descriptivos se resumen en la Tabla~\ref{tab:hv-ds1}. La prueba de Wilcoxon signed-rank arroja una diferencia significativa entre ambos algoritmos ($W=96.0$, $p=0.0022$, $\alpha=0.05$), que se mantiene tras la corrección de Holm-Bonferroni ($p=0.0043$). Esta diferencia se refleja también corrida por corrida: S-NSGA-II superó a MOEA-CKF en 21 de las 31 corridas pareadas (67.7\%), sin empates, lo que corresponde a $\Atwelve=0.323$ y, por lo tanto, a un efecto a favor de S-NSGA-II.
+
+En este dataset, S-NSGA-II obtiene un HV estadísticamente superior al de MOEA-CKF, con un tamaño de efecto grande que descarta que la diferencia sea marginal o producto del azar de una muestra pequeña. Sin embargo, la dispersión de los resultados matiza esta conclusión: MOEA-CKF es más consistente (DE$=0.0015$, IQR de apenas $0.0017$), mientras que S-NSGA-II varía casi seis veces más (DE$=0.0090$) y su corrida más baja ($0.8626$) queda incluso por debajo del mínimo histórico de MOEA-CKF ($0.8688$). Es decir, S-NSGA-II gana en la mayoría de las corridas, pero a costa de una mayor variabilidad entre ejecuciones.
+
+\textbf{Frentes de Pareto.}\label{sec:ds1-fronts}
+
+\paragraph{Solución de mejor accuracy por corrida} La Tabla~\ref{tab:fronts-ds1} fue construida usando la solución de menor error de entrenamiento por cada corrida. Las tres diferencias son significativas y se mantienen tras la corrección de Holm-Bonferroni: $p=3.11\times10^{-4}$, $1.12\times10^{-3}$ y $0.0145$, respectivamente). S-NSGA-II tiene $\sim2.5\times$ más complejidad en su mejor red ($0.022$ vs.\ $0.009$), pero a cambio obtiene un error menor ($0.132$ vs.\ $0.140$, $\Atwelve=0.710$, efecto grande) y retiene un frente de mayor tamaño. Esto explica directamente la ventaja de HV descrita anteriormente: no se trata de una mejora uniforme, sino de un desplazamiento hacia soluciones más densas y más precisas en el extremo de alta precisión del frente.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Indicadores de la solución de mejor accuracy por corrida, MOEA-CKF vs.\ S-NSGA-II para el dataset 1. Se muestran la mediana e IQR.}
+\label{tab:fronts-ds1}
+\begin{tabular}{l|p{3.5cm}p{3.5cm}|cc}
+\toprule
+\textbf{Indicador} & \textbf{MOEA-CKF} & \textbf{S-NSGA-II} & \textbf{$p$ (Wilcoxon)} & \Atwelve \\
+\midrule
+Complejidad &
+   $0.0088\ [0.0074,\,0.0140]$ &
+   $0.0221\ [0.0132,\,0.0375]$ &
+  $7.78\times10^{-5}$* & 0.226 \\
+Error de entrenamiento &
+   $0.1395\ [0.1395,\,0.1413]$ &
+   $0.1322\ [0.1232,\,0.1395]$ &
+  $3.73\times10^{-4}$* & 0.710 \\
+Tamaño del frente &
+   $6\ [5,\,6]$ &
+   $7\ [5,\,9]$ &
+  $0.0145$* & 0.323 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Frente combinado y C-metric} El frente combinado de MOEA-CKF tiene 6 soluciones mientras que S-NSGA-II tiene 9. El 55.6\% de los puntos del frente combinado de S-NSGA-II están dominados por el de MOEA-CKF, y solo 16.7\% en sentido inverso. Este resultado (Figura~\ref{fig:combined-front-ds1}) matiza el hallazgo de HV: pese a tener menos puntos, el frente combinado de MOEA-CKF domina en mayor proporción al de S-NSGA-II que al revés. Esto indica que la ventaja de S-NSGA-II en HV proviene de cubrir una región más amplia del espacio de soluciones, y no de que cada punto individual de S-NSGA-II sea mejor que su contraparte de MOEA-CKF.
+
+\begin{figure}[htbp]
+    \centering
+
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/ds1_combined_front.png}
+        \caption{Frente combinado (unión no dominada de las 31 corridas) de MOEA-CKF vs.\ S-NSGA-II, dataset 1.}
+        \label{fig:combined-front-ds1}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/ds1_complexity_bands.png}
+        \caption{Error de entrenamiento mediano por banda de complejidad, dataset 1.}
+        \label{fig:complexity-bands-ds1}
+    \end{subfigure}
+
+    \caption{Frente combinado y bandas de complejidad para dataset 1.}
+    \label{fig:frente-bandas-ds1}
+\end{figure}
+
+\paragraph{Error por banda de complejidad} Los deciles sobre el pool de puntos crudos de ambos algoritmos son mostrados en la Figura~\ref{fig:complexity-bands-ds1}. MOEA-CKF domina en las bandas de complejidad hasta $\sim0.0132$, con errores menores que S-NSGA-II en el mismo rango (p.\,ej.\ $0.143$ vs.\ $0.315$). S-NSGA-II solo iguala y supera levemente a MOEA-CKF en la banda más alta, pero es justamente ahí donde concentra la mayoría de sus puntos (37 de 189, frente a uno solo de MOEA-CKF). Esto indica que el HV agregado de S-NSGA-II se explica por operar consistentemente en esa región de mayor complejidad y precisión, y no por dominar en todo el espectro.
+
+\textbf{Convergencia.}\label{sec:ds1-convergencia}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\textwidth]{images/ds1_convergence.png}
+\caption{Curva de convergencia (HV mediano y banda P10--P90 de 31 corridas vs.\ FE aproximado), dataset 1 (Statlog Australian).}
+\label{fig:convergence-ds1}
+\end{figure}
+
+Según la Figura~\ref{fig:convergence-ds1}, MOEA-CKF converge mucho más rápido al comienzo: sube abruptamente y se estabiliza ya cerca de $\text{FE}\approx3000$--$4000$ en $\text{HV}\approx0.87$. S-NSGA-II, en cambio, arranca más bajo y asciende de forma más gradual, y solo supera el \textit{plateau} de MOEA-CKF alrededor de $\text{FE}\approx11000$--$13000$, para terminar levemente más alto.
+
+\paragraph{Velocidad de convergencia} La Tabla~\ref{tab:convergence-speed-ds1} muestra el FE hasta alcanzar el 95\% del HV final de cada corrida. La diferencia es significativa tras corrección ($p=4.66\times10^{-9}$), con $\Atwelve=0.000$: en las 31 corridas, MOEA-CKF alcanza el 95\% de su propio HV final antes que S-NSGA-II, en promedio $\sim4.3\times$ más rápido. Esto cuantifica lo que ya se observa en la curva: MOEA-CKF es sistemáticamente más rápido para acercarse a su techo, pero ese techo resulta más bajo que el de S-NSGA-II.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{FE aproximado hasta alcanzar el 95\% del HV final de cada corrida, dataset 1.}
+\label{tab:convergence-speed-ds1}
+\begin{tabular}{@{}lc}
+\toprule
+\textbf{Grupo} & \textbf{Mediana [IQR]} \\
+\midrule
+MOEA-CKF & $1212.1\ [969.7,\,1515.2]$ \\
+S-NSGA-II & $5226.1\ [5025.1,\,6733.7]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Estudio 2: Plataforma SNN (C++) vs.\ ANN (MATLAB)}
+\label{sec:ds1-plataforma}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{MOEA-CKF: SNN vs.\ ANN (MATLAB), dataset 1.}
+\label{tab:platform-MOEA-CKF-ds1}
+\begin{tabular}{@{}l|p{3.2cm}p{3.2cm}|cc@{}}
+\toprule
+\textbf{Indicador} & \textbf{MOEA-CKF: SNN} & \textbf{MOEA-CKF: ANN} &
+  \textbf{$p$ (Mann-Whitney)} & \Atwelve \\
+\midrule
+HV &  $0.8721\ [0.8704,\,0.8721]$ &  $0.8891\ [0.8891,\,0.8907]$ &
+  $1.37\times10^{-11}$* & 0.000 \\
+Complejidad &  $0.0088\ [0.0074,\,0.0140]$ &  $0.0203\ [0.0140,\,0.0390]$ &
+  $2.58\times10^{-7}$* & 0.120 \\
+Accuracy &  $0.8605\ [0.8587,\,0.8605]$ &  $0.8804\ [0.8804,\,0.8822]$ &
+  $5.06\times10^{-12}$* & 0.000 \\
+\bottomrule
+\end{tabular}
+
+\bigskip
+\centering
+\caption{S-NSGA-II: SNN vs.\ ANN (MATLAB), dataset 1.}
+\label{tab:platform-S-NSGA-II-ds1}
+\begin{tabular}{@{}l|p{3.2cm}p{3.2cm}|cc@{}}
+\toprule
+\textbf{Indicador} & \textbf{S-NSGA-II: SNN} & \textbf{S-NSGA-II: ANN} &
+  \textbf{$p$ (Mann-Whitney)} & \Atwelve \\
+\midrule
+HV &  $0.8767\ [0.8702,\,0.8856]$ &  $0.8972\ [0.8948,\,0.8979]$ &
+  $5.89\times10^{-11}$* & 0.016 \\
+Complejidad &  $0.0221\ [0.0132,\,0.0375]$ &  $0.0265\ [0.0265,\,0.1256]$ &
+  $1.33\times10^{-4}$* & 0.221 \\
+Accuracy &  $0.8678\ [0.8605,\,0.8768]$ &  $0.8895\ [0.8877,\,0.8904]$ &
+  $3.12\times10^{-11}$* & 0.011 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Las seis comparaciones (Tablas~\ref{tab:platform-MOEA-CKF-ds1} y \ref{tab:platform-S-NSGA-II-ds1}) son significativas y se mantienen tras la corrección de Holm-Bonferroni, $p$ ajustados entre $1.52\times10^{-11}$ y $1.18\times10^{-10}$ para HV/accuracy, y $2.58\times10^{-7}$/$1.33\times10^{-4}$ para complejidad). La implementación original en ANN (MATLAB) supera de forma consistente a la SNN en HV y accuracy para ambos algoritmos, con una brecha de \textit{accuracy} de $\sim0.02$ en los dos casos, un patrón esperable si se considera que la dinámica de disparo añade una capa de aproximación que una ANN estándar no enfrenta. Las redes de mejor accuracy en ANN también tienden a ser más densas en el caso de MOEA-CKF; en el caso de S-NSGA-II es similar, pero la media y el rango se disparan debido a algunas corridas en MATLAB que alcanzan redes casi densas.
+
+\subsection{Dataset 2: Climate}
+\label{sec:ds2}
+
+\subsubsection{Estudio 1: Comparación de algoritmos en SNN (C++)}
+\label{sec:ds2-estudio1}
+
+\textbf{Hipervolumen (HV).}\label{sec:ds2-hv}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Hipervolumen (HV) de MOEA-CKF y S-NSGA-II en el dataset 2 (Climate), $N=31$ corridas
+pareadas por semilla.}
+\label{tab:hv-ds2}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Algoritmo} & \textbf{N} & \textbf{Mediana [IQR]} \\
+\midrule
+MOEA-CKF & 31 & $0.9256\ [0.9255,\,0.9285]$ \\
+S-NSGA-II & 31 & $0.9278\ [0.9257,\,0.9278]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Los resultados descriptivos se resumen en la Tabla~\ref{tab:hv-ds2}. La prueba de Wilcoxon signed-rank no encuentra una diferencia significativa entre ambos algoritmos ($W=199.0$, $p=0.347$, $\alpha=0.05$), y esta falta de significancia se mantiene tras corrección ($p=0.694$). S-NSGA-II superó a MOEA-CKF en 23 de las 31 corridas (74.2\%), lo que corresponde a $\Atwelve=0.258$.
+
+Este dataset es el único caso en que el conteo de \textit{victorias} por corrida ($\Atwelve$) y el resultado de significancia del Wilcoxon divergen: S-NSGA-II gana más seguido, pero por márgenes mínimos (diferencia mediana de solo $0.00016$), mientras que en las pocas corridas donde gana MOEA-CKF lo hace por márgenes considerablemente mayores (su máximo, $0.9361$, supera ampliamente el máximo de S-NSGA-II, $0.9299$). En conjunto, no hay evidencia suficiente de una diferencia real entre ambos algoritmos en HV para este dataset, ya que ambos convergen a una región muy similar y estrecha del espacio de soluciones.
+
+\textbf{Frentes de Pareto.}\label{sec:ds2-fronts}
+
+\paragraph{Solución de mejor accuracy por corrida} En la Tabla~\ref{tab:fronts-ds2} se presentan los indicadores de las soluciones con mejor accuracy por corrida en base a la mediana.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Indicadores de la solución de mejor accuracy por corrida, MOEA-CKF vs.\ S-NSGA-II, dataset 2. Se muestran la mediana e IQR.}
+\label{tab:fronts-ds2}
+\begin{tabular}{@{}l|p{3.5cm}p{3.5cm}|cc@{}}
+\toprule
+\textbf{Indicador} & \textbf{MOEA-CKF} & \textbf{S-NSGA-II} & \textbf{$p$ (Wilcoxon)} & \Atwelve \\
+\midrule
+Complejidad &
+   $0.0190\ [0.0083,\,0.0363]$ &
+   $0.0036\ [0.0024,\,0.0036]$ &
+  $9.31\times10^{-10}$* & 1.000 \\
+Error de entrenamiento &
+   $0.0810\ [0.0775,\,0.0810]$ &
+   $0.0787\ [0.0787,\,0.0810]$ &
+  $0.5345$ & 0.565 \\
+Tamaño del frente &
+   $7\ [6,\,7]$ &
+   $3\ [3,\,4]$ &
+  $1.42\times10^{-6}$* & 0.984 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La complejidad y el tamaño de los frentes siguen siendo significativos tras corrección ($p=4.66\times10^{-9}$ y $5.69\times10^{-6}$), mientras que el error de las mejores redes no lo es ($p=0.694$, igual que el HV agregado). El resultado más llamativo es el de complejidad: S-NSGA-II encuentra redes de mejor accuracy más pequeñas que MOEA-CKF con $\Atwelve=1.000$ (gana las 31 corridas), logrando un error de entrenamiento estadísticamente indistinguible del de MOEA-CKF. Este último necesita, en cambio, redes más densas y más variables (mediana $0.019$, con corridas que llegan mucho más alto: DE$=0.14$, casi el doble de la propia mediana). S-NSGA-II también retiene frentes más pequeños.
+
+\paragraph{Frente combinado y C-metric} Los tamaños de los frentes combinados son: MOEA-CKF$=8$, S-NSGA-II$=4$. En este caso la cobertura es perfectamente simétrica pese a la diferencia de tamaño (Figura~\ref{fig:combined-front-ds2}).
+
+\begin{figure}[htbp]
+    \centering
+
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/ds2_combined_front.png}
+        \caption{Frente combinado (unión no dominada de las 31 corridas) de MOEA-CKF vs.\ S-NSGA-II, dataset 2.}
+        \label{fig:combined-front-ds2}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/ds2_complexity_bands.png}
+        \caption{Error de entrenamiento mediano por banda de complejidad, dataset 2.}
+        \label{fig:complexity-bands-ds2}
+    \end{subfigure}
+
+    \caption{Frente combinado y bandas de complejidad para dataset 2.}
+    \label{fig:frente-bandas-ds2}
+\end{figure}
+
+\paragraph{Error por banda de complejidad} Los deciles sobre el pool de puntos crudos de ambos algoritmos son mostrados en la Figura \ref{fig:complexity-bands-ds2}.
+
+S-NSGA-II prácticamente no tiene puntos más allá de la banda de complejidad $0.0036$--$0.0048$: sus 31 corridas concentran casi toda su masa en las bandas de menor complejidad, donde su error es menor que el de MOEA-CKF en las mismas bandas ($0.081$ vs.\ $0.134$). Parece ser un dataset donde S-NSGA-II se especializa en soluciones muy esparsas y lo hace con buenos resultados, mientras que MOEA-CKF explora más sin obtener una ganancia proporcional, lo cual es coherente con que el HV no distinga a los algoritmos (visto anteriormente).
+
+\textbf{Convergencia.}\label{sec:ds2-convergencia}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\textwidth]{images/ds2_convergence.png}
+\caption{Curva de convergencia, dataset 2 (Climate).}
+\label{fig:convergence-ds2}
+\end{figure}
+
+\paragraph{Velocidad de convergencia} La Tabla~\ref{tab:convergence-speed-ds2} muestra la velocidad de convergencia hasta el 95\% de su HV final. Este dataset constituye un caso límite: en las 31 corridas de \textbf{ambos} algoritmos, la población inicial (generación 0) ya alcanza el 90\% del HV final, por lo que no hay evidencia de diferencia alguna en ese umbral ($x_i=y_i$ en los 31 pares). Al 95\% sí aparece una diferencia significativa (tras corrección, $p=1.43\times10^{-3}$), con S-NSGA-II llegando más seguido ya en $\text{FE}\approx0$. Esto confirma cuantitativamente lo que sugiere la curva (Figura~\ref{fig:convergence-ds2}): Climate es un problema comparativamente \textit{saturado}, en el que el margen de mejora sobre la población inicial es pequeño para ambos algoritmos, de modo que la velocidad de convergencia aquí mide más bien qué tan rápido se estabiliza la búsqueda que una carrera real de optimización.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{FE aproximado hasta alcanzar el 95\% y el 90\% del HV final de cada corrida, dataset 2.}
+\label{tab:convergence-speed-ds2}
+\begin{tabular}{lllcc}
+\toprule
+\textbf{Umbral} & \textbf{MOEA-CKF} & \textbf{S-NSGA-II} & \textbf{$p$ (Wilcoxon)} & \Atwelve \\
+\midrule
+95\% del HV final &
+   $0\ [0,\,127.4]$ &
+   $0\ [0,\,0]$ &
+  $4.75\times10^{-4}$* & 0.694 \\
+90\% del HV final &
+   $0\ [0,\,0]$ &
+   $0\ [0,\,0]$ &
+  $1.0$ (sin diferencia) & 0.500 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Estudio 2: Plataforma SNN (C++) vs.\ ANN (MATLAB)}
+\label{sec:ds2-plataforma}
+
+Todas las comparaciones son significativas tras corrección (Tablas~\ref{tab:platform-MOEA-CKF-ds2} y \ref{tab:platform-S-NSGA-II-ds2}). La brecha ANN-SNN en HV es la más grande de los cuatro datasets para MOEA-CKF. La complejidad, en cambio, diverge fuertemente según el algoritmo: para MOEA-CKF las redes ANN son apenas más esparsas que las de SNN, mientras que para S-NSGA-II las redes ANN de mejor accuracy son casi completamente densas frente a las redes SNN descrita en \ref{sec:ds2-fronts} (mediana $0.0036$). Se trata de la divergencia de plataforma más extrema del estudio: para llegar a su mejor accuracy, S-NSGA-II-ANN necesita casi todos los pesos activos, mientras que S-NSGA-II-SNN logra un error estadísticamente similar con una fracción minúscula de la red. Sujeto a las salvedades señaladas en \ref{sec:limitaciones} (RNG e implementación distintos entre plataformas), esto sugiere que las SNN podría favorecer soluciones esparsas para esta combinación de algoritmo y dataset en particular.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{MOEA-CKF: SNN vs.\ ANN (MATLAB), dataset 2.}
+\label{tab:platform-MOEA-CKF-ds2}
+\begin{tabular}{@{}l|p{3.2cm}p{3.2cm}|cc@{}}
+\toprule
+\textbf{Indicador} & \textbf{MOEA-CKF: SNN} & \textbf{MOEA-CKF: ANN} &
+  \textbf{$p$ (Mann-Whitney)} & \Atwelve \\
+\midrule
+HV &  $0.9256\ [0.9255,\,0.9285]$ &  $0.9767\ [0.9747,\,0.9770]$ &
+  $1.40\times10^{-11}$* & 0.000 \\
+Complejidad &  $0.0190\ [0.0083,\,0.0363]$ &  $0.0487\ [0.0399,\,0.0662]$ &
+  $2.37\times10^{-4}$* & 0.228 \\
+Accuracy &  $0.9190\ [0.9190,\,0.9225]$ &  $0.9768\ [0.9745,\,0.9768]$ &
+  $6.06\times10^{-12}$* & 0.000 \\
+\bottomrule
+\end{tabular}
+
+\bigskip
+\centering
+\caption{S-NSGA-II: SNN vs.\ ANN (MATLAB), dataset 2.}
+\label{tab:platform-S-NSGA-II-ds2}
+\begin{tabular}{@{}l|p{3.2cm}p{3.2cm}|cc@{}}
+\toprule
+\textbf{Indicador} & \textbf{S-NSGA-II: SNN} & \textbf{S-NSGA-II: ANN} &
+  \textbf{$p$ (Mann-Whitney)} & \Atwelve \\
+\midrule
+HV &  $0.9278\ [0.9257,\,0.9278]$ &  $0.9477\ [0.9440,\,0.9539]$ &
+  $1.39\times10^{-11}$* & 0.000 \\
+Complejidad &  $0.0036\ [0.0024,\,0.0036]$ &  $0.9114\ [0.7316,\,0.9601]$ &
+  $7.72\times10^{-12}$* & 0.000 \\
+Accuracy &  $0.9213\ [0.9190,\,0.9213]$ &  $0.9653\ [0.9630,\,0.9699]$ &
+  $8.20\times10^{-12}$* & 0.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Dataset 3: Statlog German}
+\label{sec:ds3}
+
+\subsubsection{Estudio 1: Comparación de algoritmos en SNN (C++)}
+\label{sec:ds3-estudio1}
+
+\textbf{Hipervolumen (HV).}\label{sec:ds3-hv}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Hipervolumen (HV) de MOEA-CKF y S-NSGA-II en el dataset 3 (German), $N=31$ corridas pareadas por semilla.}
+\label{tab:hv-ds3}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Algoritmo} & \textbf{N} & \textbf{Mediana [IQR]} \\
+\midrule
+MOEA-CKF & 31 & $0.7520\ [0.7452,\,0.7560]$ \\
+S-NSGA-II & 31 & $0.7643\ [0.7547,\,0.7754]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Los resultados descriptivos se resumen en la Tabla~\ref{tab:hv-ds3}. La prueba de Wilcoxon signed-rank arroja una diferencia altamente significativa entre ambos algoritmos ($W=50.0$, $p=2.8\times10^{-5}$), que se mantiene tras corrección ($p=8.47\times10^{-5}$). S-NSGA-II superó a MOEA-CKF en 24 de las 31 corridas (77.4\%), lo que corresponde a $\Atwelve=0.226$ y a un efecto a favor de S-NSGA-II.
+
+Este es un resultado contundente a favor de S-NSGA-II: la diferencia es la segunda mayor de los cuatro datasets y, a diferencia del dataset 2, aquí la dirección del conteo de victorias y la magnitud de las diferencias coinciden. S-NSGA-II vuelve a mostrar mayor dispersión que MOEA-CKF (DE$=0.0160$ vs.\ $0.0060$), pero incluso su corrida más baja ($0.7349$) queda cerca de la mediana de MOEA-CKF, de modo que la mayor variabilidad no compromete de forma importante la fiabilidad del resultado.
+
+\textbf{Frentes de Pareto.}\label{sec:ds3-fronts}
+
+\paragraph{Solución de mejor accuracy por corrida} Se muestran en la Tabla~\ref{tab:fronts-ds3}. Los tres indicadores resultan significativos tras corrección ($p=9.15\times10^{-3}$, $1.78\times10^{-4}$, $7.41\times10^{-5}$), reproduciendo el mismo patrón cualitativo observado en el dataset 1: S-NSGA-II incurre en más complejidad en sus mejores redes a cambio de un menor error y retiene un frente sustancialmente más grande (9 vs.\ 5). De los cuatro datasets, este es el más consistente con la idea de que S-NSGA-II gana explorando redes más densas y numerosas.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Indicadores de la solución de mejor accuracy por corrida, MOEA-CKF vs.\ S-NSGA-II, dataset 3. Se muestran la mediana y el IQR.}
+\label{tab:fronts-ds3}
+\begin{tabular}{@{}l|p{3.5cm}p{3.5cm}|cc@{}}
+\toprule
+\textbf{Indicador} & \textbf{MOEA-CKF} & \textbf{S-NSGA-II} & \textbf{$p$ (Wilcoxon)} & \Atwelve \\
+\midrule
+Complejidad &
+   $0.0065\ [0.0042,\,0.0269]$ &
+   $0.0296\ [0.0204,\,0.0468]$ &
+  $0.00915$* & 0.226 \\
+Error de entrenamiento &
+   $0.2725\ [0.2681,\,0.2800]$ &
+   $0.2587\ [0.2462,\,0.2694]$ &
+  $8.90\times10^{-5}$* & 0.790 \\
+Tamaño del frente &
+   $5\ [4,\,7]$ &
+   $9\ [8,\,10.5]$ &
+  $1.85\times10^{-5}$* & 0.161 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Frente combinado y métrica \(C\)} Como se observa en la Figura~\ref{fig:combined-front-ds3}, el frente combinado de MOEA-CKF está compuesto por seis soluciones no dominadas, mientras que S-NSGA-II alcanza trece soluciones. No obstante, la métrica de cobertura muestra que la relación entre ambos frentes es más equilibrada de lo que sugiere su cardinalidad. En particular, se obtuvo que el \(30.8\%\) de las soluciones del frente combinado de S-NSGA-II son dominadas por alguna solución de MOEA-CKF. De manera recíproca, S-NSGA-II domina el \(33.3\%\) de las soluciones de MOEA-CKF.
+
+Por tanto, pese a que el frente de S-NSGA-II contiene más del doble de soluciones, la cobertura mutua entre ambos métodos es similar. Este comportamiento sugiere que ninguno de los algoritmos domina de forma concluyente al otro en toda la región de interés. Más bien, ambos conservan soluciones competitivas en distintas zonas del frente de Pareto, aunque S-NSGA-II presenta una mayor capacidad para generar alternativas no dominadas y, con ello, una representación más extensa entre complejidad estructural y error de clasificación.
+
+\begin{figure}[htbp]
+    \centering
+
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/ds3_combined_front.png}
+        \caption{Frente combinado (unión no dominada de las 31 corridas) de MOEA-CKF vs.\ S-NSGA-II, dataset 3.}
+        \label{fig:combined-front-ds3}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/ds3_complexity_bands.png}
+        \caption{Error de entrenamiento mediano por banda de complejidad, dataset 3.}
+        \label{fig:complexity-bands-ds3}
+    \end{subfigure}
+
+    \caption{Frente combinado y bandas de complejidad para dataset 3.}
+    \label{fig:frente-bandas-ds3}
+\end{figure}
+
+\paragraph{Error por banda de complejidad} La distribución del error según bandas de complejidad se presenta en la Figura~\ref{fig:complexity-bands-ds3}. En las bandas de menor complejidad, ambos algoritmos exhiben comportamientos comparables, con una leve ventaja de MOEA-CKF en algunos intervalos. Sin embargo, esta tendencia cambia a partir de una complejidad aproximada de \(0.0056\). Desde dicho punto, S-NSGA-II comienza a obtener errores consistentemente menores que MOEA-CKF, y la diferencia se hace más evidente conforme aumenta la complejidad de las soluciones. En las bandas superiores, por ejemplo, el error alcanza valores de \(0.256\) para S-NSGA-II y de \(0.271\) para MOEA-CKF.
+
+Los resultados sugieren que S-NSGA-II aprovecha de forma más efectiva el incremento de complejidad estructural en este conjunto de datos. Mientras que MOEA-CKF mantiene un comportamiento competitivo en soluciones muy dispersas, S-NSGA-II logra traducir la incorporación de conexiones adicionales en una reducción más sostenida del error. Esta capacidad es coherente con el mayor tamaño de su frente combinado y contribuye a explicar la ventaja de hipervolumen descrita anteriormente: la ventaja no surge exclusivamente de producir un mayor número de soluciones, sino de extender el frente hacia regiones de mayor complejidad en las que dichas soluciones mantienen una mejor calidad predictiva.
+
+\textbf{Convergencia.}\label{sec:ds3-convergencia}
+
+La curva (Figura~\ref{fig:convergence-ds3}) muestra a S-NSGA-II arrancando mucho más bajo ($\sim0.654$) y ascendiendo con pendiente pronunciada, hasta cruzar a MOEA-CKF alrededor de $\text{FE}\approx4500$--$5000$ y terminar por encima de él ($\sim0.764$ vs.\ $\sim0.752$), mientras que MOEA-CKF se aplana muy temprano.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\textwidth]{images/ds3_convergence.png}
+\caption{Curva de convergencia, dataset 3 (German).}
+\label{fig:convergence-ds3}
+\end{figure}
+
+\paragraph{Velocidad de convergencia} (FE hasta 95\% del HV final), Tabla~\ref{tab:convergence-speed-ds3}. La diferencia es significativa tras corrección ($p=4.66\times10^{-9}$), y arroja un resultado aparentemente paradójico, aunque coherente con la curva: si bien S-NSGA-II logra el HV final más alto (visto anteriormente), es MOEA-CKF quien llega casi instantáneamente (mediana $\text{FE}\approx0$) al 95\% de su propio techo, más bajo, pero alcanzado de inmediato, mientras que S-NSGA-II necesita $\sim3400$ FE (8.5\% del presupuesto total de 40000) para llegar al 95\% de un techo más alto. Es un ejemplo claro del balance entre velocidad y calidad: MOEA-CKF se estabiliza rápido en un techo menor, mientras que S-NSGA-II tarda más en llegar a uno mayor.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{FE aproximado hasta alcanzar el 95\% del HV final de cada corrida, dataset 3.}
+\label{tab:convergence-speed-ds3}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Grupo} & \textbf{Mediana [IQR]} & \textbf{$p$ (Wilcoxon)} &
+  \Atwelve \\
+\midrule
+MOEA-CKF & $0\ [0,\,0]$ & --- & --- \\
+S-NSGA-II & $3408.5\ [2456.1,\,3909.8]$ & $9.31\times10^{-10}$* & 0.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Estudio 2: Plataforma SNN (C++) vs.\ ANN (MATLAB)}
+\label{sec:ds3-plataforma}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{MOEA-CKF: SNN vs.\ ANN (MATLAB), dataset 3.}
+\label{tab:platform-MOEA-CKF-ds3}
+\begin{tabular}{@{}l|p{3.2cm}p{3.2cm}|cc@{}}
+\toprule
+\textbf{Indicador} & \textbf{MOEA-CKF: SNN} & \textbf{MOEA-CKF: ANN} &
+  \textbf{$p$ (Mann-Whitney)} & \Atwelve \\
+\midrule
+HV &  $0.7520\ [0.7452,\,0.7560]$ &  $0.8098\ [0.8082,\,0.8111]$ &
+  $1.40\times10^{-11}$* & 0.000 \\
+Complejidad &  $0.0065\ [0.0042,\,0.0269]$ &  $0.0413\ [0.0375,\,0.0644]$ &
+  $1.26\times10^{-6}$* & 0.142 \\
+Accuracy &  $0.7275\ [0.7200,\,0.7319]$ &  $0.7925\ [0.7906,\,0.7937]$ &
+  $1.20\times10^{-11}$* & 0.000 \\
+\bottomrule
+\end{tabular}
+
+\bigskip
+\centering
+\caption{S-NSGA-II: SNN vs.\ ANN (MATLAB), dataset 3.}
+\label{tab:platform-S-NSGA-II-ds3}
+\begin{tabular}{@{}l|p{3.2cm}p{3.2cm}|cc@{}}
+\toprule
+\textbf{Indicador} & \textbf{S-NSGA-II: SNN} & \textbf{S-NSGA-II: ANN} &
+  \textbf{$p$ (Mann-Whitney)} & \Atwelve \\
+\midrule
+HV &  $0.7643\ [0.7547,\,0.7754]$ &  $0.8119\ [0.8098,\,0.8132]$ &
+  $1.40\times10^{-11}$* & 0.000 \\
+Complejidad &  $0.0296\ [0.0204,\,0.0468]$ &  $0.8751\ [0.3506,\,0.9942]$ &
+  $6.89\times10^{-10}$* & 0.044 \\
+Accuracy &  $0.7412\ [0.7306,\,0.7538]$ &  $0.7975\ [0.7963,\,0.8006]$ &
+  $1.33\times10^{-11}$* & 0.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Todas las comparaciones son significativas tras corrección (Tablas~\ref{tab:platform-MOEA-CKF-ds3} y \ref{tab:platform-S-NSGA-II-ds3}), reproduciendo el mismo patrón observado en el dataset 2: las redes ANN de MOEA-CKF son más densas que las SNN, mientras que las redes ANN de S-NSGA-II vuelven a ser casi totalmente densa frente a redes SNN mucho más esparsas. La brecha de complejidad entre ANN y SNN para S-NSGA-II es sistemáticamente mucho mayor que la de MOEA-CKF en los cuatro datasets (ver \ref{sec:sintesis}), lo que confirma que se trata de un patrón recurrente y no de un caso aislado de Climate.
+
+\subsection{Dataset 4: Sonar}
+\label{sec:ds4}
+
+\subsubsection{Estudio 1: Comparación de algoritmos en SNN (C++)}
+\label{sec:ds4-estudio1}
+
+\textbf{Hipervolumen (HV).}\label{sec:ds4-hv}
+
+Los resultados descriptivos se resumen en la Tabla~\ref{tab:hv-ds4}. La prueba de Wilcoxon signed-rank arroja una diferencia altamente significativa entre ambos algoritmos ($W=60.0$, $p=8.7\times10^{-5}$), que se mantiene tras corrección ($p=2.60\times10^{-4}$). MOEA-CKF superó a S-NSGA-II en 22 de las 31 corridas (71.0\%), lo que corresponde a $\Atwelve=0.710$ y a un efecto a favor de MOEA-CKF.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Hipervolumen (HV) de MOEA-CKF y S-NSGA-II en el dataset 4 (Sonar), $N=31$ corridas pareadas por semilla.}
+\label{tab:hv-ds4}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Algoritmo} & \textbf{N} & \textbf{Mediana [IQR]} \\
+\midrule
+MOEA-CKF & 31 & $0.8274\ [0.8141,\,0.8432]$ \\
+S-NSGA-II & 31 & $0.7812\ [0.7601,\,0.8059]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Este es el único dataset donde se invierte el patrón observado en los tres anteriores: MOEA-CKF supera a S-NSGA-II de forma significativa y con la mayor diferencia absoluta de HV observada en todo el estudio ($\Delta\text{media}=0.0417$). Es, además, el dataset con mayor varianza para ambos algoritmos (DE$\approx0.03$--$0.04$), lo cual es consistente con que Sonar es, de los cuatro, el de mayor dimensionalidad (60 features).
+
+\textbf{Frentes de Pareto.}\label{sec:ds4-fronts}
+
+\paragraph{Solución de mejor accuracy por corrida} Los tres indicadores resultan significativos tras corrección ($p=2.60\times10^{-4}$, $1.91\times10^{-4}$, $0.0166$). A diferencia de los datasets 1 y 3, aquí MOEA-CKF no cede complejidad a cambio de precisión: sus redes de mejor accuracy son a la vez más densas y más precisas que la de S-NSGA-II, y además retiene frentes más grandes. Es el único dataset donde un algoritmo domina de forma tan directa en los tres indicadores del frente a la vez. El resumen se muestra en la Tabla~\ref{tab:fronts-ds4}.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Indicadores de la solución de mejor accuracy por corrida, MOEA-CKF vs.\ S-NSGA-II, dataset 4.}
+\label{tab:fronts-ds4}
+\begin{tabular}{@{}lp{3.5cm}p{3.5cm}cc@{}}
+\toprule
+\textbf{Indicador} & \textbf{MOEA-CKF} & \textbf{S-NSGA-II} & \textbf{$p$ (Wilcoxon)} & \Atwelve \\
+\midrule
+Complejidad &
+   $0.0429\ [0.0208,\,0.0847]$ &
+   $0.0159\ [0.0077,\,0.0270]$ &
+  $1.07\times10^{-4}$* & 0.742 \\
+Error de entrenamiento &
+   $0.1796\ [0.1677,\,0.1976]$ &
+   $0.2395\ [0.2126,\,0.2635]$ &
+  $4.77\times10^{-5}$* & 0.194 \\
+Tamaño del frente &
+   $12\ [9,\,13]$ &
+   $8\ [7,\,10.5]$ &
+  $0.0166$* & 0.645 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Frente combinado y C-metric} El 85.7\% de las soluciones del frente combinado de S-NSGA-II son dominados por alguna solución del frente de MOEA-CKF. Al revés, solo el 14.3\% de las soluciones de MOEA-CKF son dominadas por alguna solución de S-NSGA-II, siendo el resultado más asimétrico de los cuatro datasets.
+
+\begin{figure}[htbp]
+    \centering
+
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/ds4_combined_front.png}
+        \caption{Frente combinado (unión no dominada de las 31 corridas) de MOEA-CKF vs.\ S-NSGA-II, dataset 4.}
+        \label{fig:combined-front-ds4}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/ds4_complexity_bands.png}
+        \caption{Error de entrenamiento mediano por banda de complejidad, dataset 4.}
+        \label{fig:complexity-bands-ds4}
+    \end{subfigure}
+
+    \caption{Frente combinado y bandas de complejidad para dataset 4.}
+    \label{fig:frente-bandas-ds4}
+\end{figure}
+
+Pese a que ambos frentes combinados tienen el mismo tamaño (Figura~\ref{fig:combined-front-ds4}), este resultado constituye la evidencia más contundente del estudio de que un algoritmo puede dominar punto por punto a otro, y no solo en el resumen agregado de HV.
+
+\paragraph{Error por banda de complejidad} MOEA-CKF presenta un error menor que S-NSGA-II en casi todo el espectro de complejidad, con S-NSGA-II apenas por delante en una banda alta y angosta (de muestra pequeña), y con MOEA-CKF como el único que alcanza la banda de mayor complejidad. La ventaja de MOEA-CKF en este dataset es, entonces, amplia y no se concentra en una sola región del espacio de complejidad, a diferencia de lo que ocurre con S-NSGA-II en los datasets 1 y 3. Esto se muestra en la Figura~\ref{fig:complexity-bands-ds4}.
+
+\textbf{Convergencia.}\label{sec:ds4-convergencia}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\textwidth]{images/ds4_convergence.png}
+\caption{Curva de convergencia, dataset 4 (Sonar).}
+\label{fig:convergence-ds4}
+\end{figure}
+
+Según la Figura~\ref{fig:convergence-ds4}, MOEA-CKF se mantiene por encima de S-NSGA-II durante todo el presupuesto y todavía sigue subiendo lentamente cerca de $\text{FE}=40000$, sin llegar a aplanarse del todo, mientras que S-NSGA-II se estabiliza antes ($\text{FE}\approx20000$--$25000$) en un nivel claramente inferior.
+
+\paragraph{Velocidad de convergencia} El resumen se muestra en la Tabla~\ref{tab:convergence-speed-ds4} (FE hasta 95\% del HV final). La diferencia es significativa tras corrección ($p=4.58\times10^{-5}$), y aquí se invierte la relación entre velocidad y calidad observada en el dataset 3: el algoritmo con menor HV final (S-NSGA-II) converge más rápido a su propio techo, mientras que MOEA-CKF, con mayor HV final, tarda $\sim2.4\times$ más en llegar al 95\% del suyo y, según la curva, todavía no se estabiliza del todo al final del presupuesto. Esto sugiere que MOEA-CKF podría beneficiarse de un presupuesto de FE aún mayor en problemas de alta dimensionalidad como este dataset, lo que constituye un experimento natural para trabajo futuro.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{FE aproximado hasta alcanzar el 95\% del HV final de cada corrida, dataset 4.}
+\label{tab:convergence-speed-ds4}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Grupo} & \textbf{Mediana [IQR]} & \textbf{$p$ (Wilcoxon)} &
+  \Atwelve \\
+\midrule
+MOEA-CKF & $13626.4\ [10622.7,\,18901.1]$ & --- & --- \\
+S-NSGA-II & $5614.0\ [4110.3,\,6416.0]$ & $9.16\times10^{-6}$* & 0.903 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Estudio 2: Plataforma SNN (C++) vs.\ ANN (MATLAB)}
+\label{sec:ds4-plataforma}
+
+Todas las comparaciones son significativas tras corrección (Tablas~\ref{tab:platform-MOEA-CKF-ds4} y \ref{tab:platform-S-NSGA-II-ds4}). Para S-NSGA-II, la brecha ANN-SNN de HV y de accuracy es la más grande de los cuatro datasets, lo que sugiere que la alta dimensionalidad de Sonar penaliza más a SNN que al ANN, al menos para este algoritmo. La complejidad de MOEA-CKF constituye, además, la única anomalía de las ocho combinaciones plataforma--algoritmo del estudio: aquí las redes SNN de mejor accuracy son más densas que las ANN, mientras que en el resto de los casos con una brecha clara de complejidad es la ANN la más densa.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{MOEA-CKF: SNN vs.\ ANN (MATLAB), dataset 4.}
+\label{tab:platform-MOEA-CKF-ds4}
+\begin{tabular}{@{}lp{3.2cm}p{3.2cm}cc@{}}
+\toprule
+\textbf{Indicador} & \textbf{MOEA-CKF: SNN} & \textbf{MOEA-CKF: ANN} &
+  \textbf{$p$ (Mann-Whitney)} & \Atwelve \\
+\midrule
+HV &  $0.8274\ [0.8141,\,0.8432]$ &  $0.8740\ [0.8659,\,0.8849]$ &
+  $5.89\times10^{-11}$* & 0.016 \\
+Complejidad &  $0.0429\ [0.0208,\,0.0847]$ &  $0.0097\ [0.0063,\,0.0151]$ &
+  $2.40\times10^{-6}$* & 0.849 \\
+Accuracy &  $0.8204\ [0.8024,\,0.8323]$ &  $0.8623\ [0.8533,\,0.8742]$ &
+  $4.93\times10^{-10}$* & 0.041 \\
+\bottomrule
+\end{tabular}
+
+\bigskip
+\centering
+\caption{S-NSGA-II: SNN vs.\ ANN (MATLAB), dataset 4.}
+\label{tab:platform-S-NSGA-II-ds4}
+\begin{tabular}{@{}lp{3.2cm}p{3.2cm}cc@{}}
+\toprule
+\textbf{Indicador} & \textbf{S-NSGA-II: SNN} & \textbf{S-NSGA-II: ANN} &
+  \textbf{$p$ (Mann-Whitney)} & \Atwelve \\
+\midrule
+HV &  $0.7812\ [0.7601,\,0.8059]$ &  $0.9143\ [0.8994,\,0.9158]$ &
+  $1.40\times10^{-11}$* & 0.000 \\
+Complejidad &  $0.0159\ [0.0077,\,0.0270]$ &  $0.1503\ [0.0254,\,0.9942]$ &
+  $5.74\times10^{-7}$* & 0.132 \\
+Accuracy &  $0.7605\ [0.7365,\,0.7874]$ &  $0.9102\ [0.9042,\,0.9281]$ &
+  $1.32\times10^{-11}$* & 0.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Otros experimentos}
+\label{sec:otros-resultados}
+
+Esta subsección agrupa dos experimentos adicionales (remuestreo vs.\ evaluación completa y tiempo de cómputo) cuyos resultados, al ser más acotados que los de las Secciones \S\ref{sec:ds1}--\S\ref{sec:ds4}, se presentan de forma consolidada para los cuatro datasets en lugar de repetirse por dataset.
+
+\subsubsection{Remuestreo vs.\ conjunto de referencia}
+\label{sec:otros-bootstrap}
+
+Según la Tabla~\ref{tab:bootstrap-all}, el remuestreo mejora el HV de forma significativa y con efecto grande en ambos algoritmos en ds1 y ds2 ($p=1.86\times10^{-9}$ y $8.66\times10^{-5}$ en ds1; $p=1.86\times10^{-9}$ en ambos casos en ds2, tras corre), este último con el menor costo relativo de tiempo de los cuatro datasets ($\times4.8$--$4.9$, frente a $\times5$--$15$ en el resto). En ds3 y ds4, en cambio, el efecto es mixto: en ds3 solo MOEA-CKF mejora significativamente (tras corrección, $p=3.91\times10^{-4}$), mientras que S-NSGA-II no lo hace ($p=0.066$), con la dirección de $\Atwelve=0.710$ incluso sugiriendo que la evaluación normal iguala o supera al remuestreo más seguido que a la inversa, aunque sin significancia estadística; en ds4 el patrón se invierte y es S-NSGA-II quien mejora significativamente (tras corrección, $p=0.0264$), sin efecto en MOEA-CKF ($p=0.224$, $\Atwelve=0.484$, prácticamente indistinguible del azar). No existe, entonces, una regla simple: el beneficio del remuestreo depende de la combinación específica de dataset y algoritmo, algo que se discute en (\ref{sec:limitaciones}), y su costo de tiempo ($\times4.8$ a $\times15.1$) es siempre sustancial, independientemente de si el HV mejora o no.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{HV con evaluación normal vs.\ remuestreo, y multiplicador de tiempo de cómputo, en los cuatro datasets. Se muestra la mediana y el IQR entre paréntesis.}
+\label{tab:bootstrap-all}
+\begin{tabular}{lllllll}
+\hline
+\textbf{Dataset}            & \textbf{Algoritmo} & \textbf{Normal}             & \textbf{Remuestreo}         & $p$ \textbf{Wilcoxon}            & $p$ \textbf{Corregido}          & \Atwelve \\ \hline
+\multirow{2}{*}{1} & MOEA-CKF  & $0.8721\ (0.0017)$ & $0.8830\ (0.0039)$ & $9.31\times10^{-10}$* & $1.86\times10^{-9}$* & 0.000                   \\
+                   & S-NSGA-II & $0.8767\ (0.0153)$ & $0.8879\ (0.0079)$ & $8.66\times10^{-5}$*  & $8.66\times10^{-5}$* & 0.258                   \\\hline
+\multirow{2}{*}{2} & MOEA-CKF  & $0.9256\ (0.0029)$ & $0.9401\ (0.0022)$ & $9.31\times10^{-10}$* & $1.86\times10^{-9}$* & 0.000                   \\
+                   & S-NSGA-II & $0.9278\ (0.0021)$ & $0.9399\ (0.0018)$ & $9.31\times10^{-10}$* & $1.86\times10^{-9}$* & 0.000                   \\\hline
+\multirow{2}{*}{3} & MOEA-CKF  & $0.7520\ (0.0108)$ & $0.7567\ (0.0037)$ & $1.95\times10^{-4}$*  & $3.91\times10^{-4}$* & 0.226                   \\
+                   & S-NSGA-II & $0.7643\ (0.0207)$ & $0.7549\ (0.0028)$ & $0.0664$              & $0.0664$             & 0.710                   \\\hline
+\multirow{2}{*}{4} & MOEA-CKF  & $0.8274\ (0.0291)$ & $0.8356\ (0.0267)$ & $0.2241$              & $0.2241$             & 0.484                   \\
+                   & S-NSGA-II & $0.7812\ (0.0458)$ & $0.8066\ (0.0519)$ & $0.0132$*             & $0.0264$*            & 0.290    \\\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Tiempo de cómputo}
+\label{sec:otros-tiempo}
+
+Según la Tabla~\ref{tab:time-all}, S-NSGA-II es significativamente más rápido que MOEA-CKF en los cuatro datasets, con un efecto grande y menor variabilidad entre corridas en todos los casos. La brecha, sin embargo, crece marcadamente con la dimensionalidad: de $\sim6$--$10\%$ en ds1--ds3 (14--24 features, $\Atwelve=0.867$--$0.933$) a $\sim2.4\times$ en ds4 (60 features, $\Atwelve=1.000$, sin una sola excepción en las 15 corridas pareadas). MOEA-CKF resulta ser el más lento y variable en ds4 (DE$=259.5$s, por encima del resto de los datasets).
+
+% lo cual es consistente con que su mecanismo de fusión de conocimiento entre escalas (SVD, análisis de dispersión) escala peor con la dimensionalidad que los operadores más simples de S-NSGA-II.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Tiempo de ejecución (\texttt{time\_s}) en los cuatro datasets, $N=15$ corridas pareadas por dataset.}
+\label{tab:time-all}
+\begin{tabular}{@{}llccc@{}}
+\toprule
+\textbf{Dataset} & \textbf{Grupo} & \textbf{Mediana [IQR]} & \textbf{$p$ (Wilcoxon)} &
+  \Atwelve \\
+\midrule
+ds1: Australian & MOEA-CKF & $285.6\ [263.7,\,288.2]$ s & --- & --- \\
+ds1: Australian & S-NSGA-II & $259.6\ [258.4,\,260.5]$ s & $0.00153$* & 0.867 \\
+\midrule
+ds2: Climate & MOEA-CKF & $230.5\ [224.0,\,235.2]$ s & --- & --- \\
+ds2: Climate & S-NSGA-II & $216.7\ [216.0,\,217.0]$ s & $8.54\times10^{-4}$* & 0.867 \\
+\midrule
+ds3: German & MOEA-CKF & $936.6\ [895.7,\,956.1]$ s & --- & --- \\
+ds3: German & S-NSGA-II & $871.3\ [858.9,\,883.0]$ s & $4.27\times10^{-4}$* & 0.933 \\
+\midrule
+ds4: Sonar & MOEA-CKF & $715.1\ [525.9,\,865.2]$ s & --- & --- \\
+ds4: Sonar & S-NSGA-II & $295.5\ [294.0,\,298.2]$ s & $6.10\times10^{-5}$* & 1.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Síntesis entre datasets}
+\label{sec:sintesis}
+
+A continuación se presenta la sintésis de los resultados, teniendo en consideración los seis enfoques estudiados sobre los diferentes conjuntos experimentales.
+
+\paragraph{Hipervolumen} S-NSGA-II tiene mejor HV en 2 de los 4 datasets (ds1, ds3), MOEA-CKF en 1 (ds4), y en 1 no hay diferencia significativa (ds2), sin cambios respecto al análisis original. Se mantiene la hipótesis, no probada estadísticamente con solo cuatro puntos, de que S-NSGA-II rinde mejor en datasets de menor dimensionalidad (14 y 24 features) y MOEA-CKF en el de mayor dimensionalidad (60 features), mientras que en el de 18 features no hay diferencia. Los enfoques de comparación incorporados en este análisis refuerzan esta lectura con más matices.
+
+\paragraph{Frentes} En ds1 y ds3, los datasets que gana S-NSGA-II, sus redes de mejor accuracy son más densas y más exactas que las de MOEA-CKF; en ds4, que gana MOEA-CKF, el patrón se repite pero con los roles invertidos, ya que es MOEA-CKF quien tiene redes más densas y precisas a la vez. El C-metric del frente combinado es más parejo en ds2/ds3 ($0.50/0.50$, $0.31/0.33$) y muy asimétrico en ds4 ($0.86/0.14$ a favor de MOEA-CKF), de modo que el dataset con la victoria de HV más contundente es también el de dominancia punto a punto más contundente.
+
+\paragraph{Convergencia} En los tres datasets donde existe una diferencia clara de HV (ds1, ds3, ds4), el algoritmo que tiene menor HV final es sistemáticamente el que converge más rápido a su propio techo ($\Atwelve$ de velocidad $\approx0.00$ para MOEA-CKF en ds1/ds3, $\approx0.90$ para MOEA-CKF en ds4, siempre a favor del algoritmo de menor HV). Un \textit{plateau} rápido en un techo bajo frente a un ascenso lento hacia un techo alto parece ser, entonces, un balance recurrente en este estudio, y no el ruido de una sola corrida.
+
+\paragraph{Plataforma} Es el hallazgo más uniforme de todo el análisis. La ANN original supera a la SNN en HV y exactitud en las 8 de 8 combinaciones dataset$\times$algoritmo, siempre de forma significativa tras corrección. La brecha de exactitud es más pequeña en ds1 y más grande en ds4 para S-NSGA-II. La brecha de complejidad entre ANN y SNN para S-NSGA-II (más alta en ds2/ds3, menor en ds1/ds4) es sistemáticamente mayor que la de MOEA-CKF (siempre moderada), un patrón dependiente del algoritmo que se repite entre datasets y que podría merecer investigación aparte.
+
+\paragraph{Tiempo} S-NSGA-II es más rápido en los cuatro datasets, pero la brecha crece marcadamente con la dimensionalidad, de $\sim6$--$10\%$ en ds1--ds3 (14--24 features) a $\sim2.4\times$ en ds4 (60 features, $\Atwelve=1.000$). Esto es consistente con que MOEA-CKF consume más FE por generación que S-NSGA-II, y con que ese costo adicional escala con el tamaño del problema.
+
+\paragraph{Remuestreo} Mejora el HV de forma clara y consistente en ds1 y ds2, con efecto grande en ambos algoritmos, pero produce resultados mixtos en ds3 (solo ayuda a MOEA-CKF) y en ds4 (solo ayuda a S-NSGA-II). No existe, entonces, una regla simple, y el costo de tiempo ($\times4.8$ a $\times15.1$) es siempre sustancial, independientemente de si el HV mejora o no.
+
+También se mantiene la observación original: en 3 de los 4 datasets (ds1, ds2, ds3) MOEA-CKF muestra menor varianza entre corridas que S-NSGA-II en HV, incluso cuando pierde en mediana, es decir, MOEA-CKF tiende a ser más consistente y predecible. Si el criterio de la tesis valora la reproducibilidad además del desempeño puntual, esta observación sigue siendo relevante más allá de qué algoritmo ``gana'' cada test.
+
+\subsection{Limitaciones de este análisis}
+\label{sec:limitaciones}
+
+\paragraph{Accuracy de test} se trata de una limitación \textbf{estructural}, no de un dato pendiente de calcular. El 100\% de las corridas archivadas usan una arquitectura de 2 salidas (WTA). Con los datos actuales no es posible medir la generalización de forma directa; el análisis de frentes (\ref{sec:ds1-fronts}--\S\ref{sec:ds4-fronts}) funciona como el sustituto disponible, al examinar la relación complejidad-error de todo el frente en lugar de un valor puntual de accuracy de test.
+
+\paragraph{Tiempo de cómputo} Los conjuntos experimentales normal y de remuestreo siguen sin permitir una comparación válida en tiempo de ejecución, debido al paralelismo y los hilos no controlados entre tandas de ejecución. Solo el conjunto experimental temporal permite una comparación de tiempo válida, ejecutandose con hiperparámetros compartidos para ambos algoritmos; por ello, sus conclusiones de tiempo no deben mezclarse con las conclusiones de calidad (HV) del resto del análisis, que sí emplea hiperparámetros afinados.
+
+\paragraph{Comparación de plataforma (SNN vs.\ ANN)} MATLAB/PlatEMO original y la migración a C++ difieren en más que el modelo de neurona, ya que también difieren en la implementación y en el generador de números aleatorios. Por ello, los resultados de \ref{sec:ds1-plataforma}--\ref{sec:ds4-plataforma} deben leerse como evidencia de que ANN supera consistentemente a la SNN.
+
+\paragraph{Remuestreo} el régimen de evaluación modifica el ruido de la señal de fitness, y su efecto sobre el HV final resulta mixto entre dataset y algoritmo sin que se haya identificado un patrón simple. Queda como pregunta abierta si existe alguna interacción entre el remuestreo y los mecanismos específicos de cada algoritmo.
+
+\paragraph{C-metric sobre frentes combinados pequeños} los frentes combinados de 31 corridas quedan reducidos a 4--14 puntos tras deduplicar y filtrar los no dominados, de modo que la resolución de la métrica de cobertura es limitada en conjuntos tan pequeños. Por ello, se reporta como una magnitud aproximada y no como una proporción de alta precisión.
+
+\paragraph{FE aproximado en convergencia} No se registra el FE por fila, sino solo la \texttt{generation}, que no es comparable entre algoritmos porque MOEA-CKF consume más FE por generación que S-NSGA-II. En consecuencia, el eje FE de las curvas y de los umbrales de velocidad es una aproximación por interpolación lineal dentro de cada corrida, y no un valor exacto por fila.

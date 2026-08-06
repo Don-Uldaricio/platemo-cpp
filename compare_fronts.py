@@ -14,6 +14,7 @@ Tres técnicas complementarias, por dataset:
 Usage:
     python compare_fronts.py
     python compare_fronts.py --results-dir results/normal_results --out comparison/fronts
+    python compare_fronts.py --ds 1 --show   # ventana interactiva (zoom/pan) solo para ds1
 """
 
 import argparse
@@ -64,7 +65,8 @@ def analyze_best_accuracy(results_dir: Path, ds: int, alpha: float) -> tuple[str
     return "\n".join(md), csv_rows
 
 
-def analyze_combined_front(results_dir: Path, ds: int, out_dir: Path) -> tuple[str, list[dict]]:
+def analyze_combined_front(results_dir: Path, ds: int, out_dir: Path,
+                            show: bool = False) -> tuple[str, list[dict]]:
     fronts = {algo: lib.combined_front(_raw_points(results_dir, ds, algo)) for algo in lib.ALGOS}
     c_ab, c_ba = lib.c_metric(fronts["moeackf"], fronts["snsgaii"])
 
@@ -86,6 +88,8 @@ def analyze_combined_front(results_dir: Path, ds: int, out_dir: Path) -> tuple[s
     fig.tight_layout()
     png_name = f"ds{ds}_combined_front.png"
     fig.savefig(out_dir / png_name, dpi=150, bbox_inches="tight")
+    if show:
+        plt.show()
     plt.close(fig)
 
     md = (
@@ -109,7 +113,8 @@ def analyze_combined_front(results_dir: Path, ds: int, out_dir: Path) -> tuple[s
     return md, csv_rows
 
 
-def analyze_complexity_bands(results_dir: Path, ds: int, out_dir: Path, n_bins: int = 10) -> str:
+def analyze_complexity_bands(results_dir: Path, ds: int, out_dir: Path, n_bins: int = 10,
+                              show: bool = False) -> str:
     parts = []
     for algo in lib.ALGOS:
         pts = _raw_points(results_dir, ds, algo)
@@ -154,6 +159,8 @@ def analyze_complexity_bands(results_dir: Path, ds: int, out_dir: Path, n_bins: 
     ax.legend()
     fig.tight_layout()
     fig.savefig(out_dir / f"ds{ds}_complexity_bands.png", dpi=150, bbox_inches="tight")
+    if show:
+        plt.show()
     plt.close(fig)
 
     lines.append(f"\n![Error por banda ds{ds}](ds{ds}_complexity_bands.png)\n")
@@ -166,10 +173,20 @@ def main():
     parser.add_argument("--results-dir", type=Path, default=Path("results/normal_results"))
     parser.add_argument("--alpha", type=float, default=0.05)
     parser.add_argument("--out", type=Path, default=Path("comparison/fronts"))
+    parser.add_argument("--ds", type=int, default=None,
+                         help="Procesar un único dataset (default: todos los encontrados)")
+    parser.add_argument("--show", action="store_true",
+                         help="Mostrar cada gráfico en una ventana interactiva (zoom/pan) "
+                              "además de guardarlo como PNG")
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
 
     datasets = lib.discover_datasets(args.results_dir)
+    if args.ds is not None:
+        if args.ds not in datasets:
+            print(f"ds{args.ds} no tiene resultados de ambos algoritmos en {args.results_dir}")
+            return
+        datasets = [args.ds]
     if not datasets:
         print(f"No se encontraron pares ds{{N}}_moeackf / ds{{N}}_snsgaii en {args.results_dir}")
         return
@@ -183,12 +200,12 @@ def main():
         pd.DataFrame(rows1).to_csv(args.out / f"ds{ds}_best_accuracy.csv", index=False)
         best_rows.extend(rows1)
 
-        md2, rows2 = analyze_combined_front(args.results_dir, ds, args.out)
+        md2, rows2 = analyze_combined_front(args.results_dir, ds, args.out, show=args.show)
         (args.out / f"ds{ds}_combined_front.md").write_text(md2)
         pd.DataFrame(rows2).to_csv(args.out / f"ds{ds}_combined_front.csv", index=False)
         cmetric_rows.extend(rows2)
 
-        md3 = analyze_complexity_bands(args.results_dir, ds, args.out)
+        md3 = analyze_complexity_bands(args.results_dir, ds, args.out, show=args.show)
         (args.out / f"ds{ds}_complexity_bands.md").write_text(md3)
 
         summary_parts += [md1, md2, md3]

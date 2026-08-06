@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Resultados y discusi&oacute;n &mdash; comparaci&oacute;n MOEACKF vs&period; SNSGAII</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+            
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <span id="markdown-mermaid" aria-hidden="true" data-config="{&quot;darkModeTheme&quot;:&quot;vscode&quot;,&quot;lightModeTheme&quot;:&quot;vscode&quot;,&quot;maxTextSize&quot;:50000,&quot;clickDrag&quot;:&quot;alt&quot;,&quot;showControls&quot;:&quot;onHoverOrFocus&quot;,&quot;resizable&quot;:true,&quot;maxHeight&quot;:&quot;&quot;}"></span>
+				<h1 id="resultados-y-discusión--comparación-moeackf-vs-snsgaii">Resultados y discusión — comparación MOEACKF vs. SNSGAII</h1>
+<blockquote>
+<p>Metodología aplicada: la descrita en <code>docs/metodologia_comparacion.md</code>. Seis ángulos de
+comparación sobre cuatro fuentes de datos (ver §1.4 de la metodología): (1) hipervolumen (HV)
+principal, (2) frentes de Pareto (complejidad vs. error), (3) convergencia, (4) plataforma
+SNN (C++) vs. ANN (MATLAB/PlatEMO original), (5) evaluación bootstrap vs. completa, y
+(6) tiempo de cómputo. Los ángulos 1–3 y 5 están pareados por <code>seed</code> (Wilcoxon signed-rank +
+Â₁₂ pareado); el ángulo 4 (plataforma) no tiene seed compartida y usa Mann-Whitney U + Â₁₂ no
+pareado. Todo se analiza <strong>por dataset por separado</strong> (nunca se combinan datasets en un mismo
+test). Los p-valores mostrados en cada tabla son crudos; el veredicto final tras corrección de
+Holm-Bonferroni por familias (<code>docs/metodologia_comparacion.md</code> §6.5) está en
+<code>comparison/corrections_summary.csv</code> y se cita en el texto como &quot;tras corrección&quot;.
+Accuracy de test no se incluye: es una limitación estructural de los datos archivados (ver
+§6 y la metodología §4), no un dato pendiente.</p>
+<p>Interpretación de Â₁₂ (Vargha &amp; Delaney, 1998), sobre <code>|Â₁₂ − 0.5|</code>: <code>&lt; 0.06</code> insignificante,
+<code>0.06–0.14</code> pequeño, <code>0.14–0.21</code> mediano, <code>≥ 0.21</code> grande.</p>
+</blockquote>
+<h2 id="1-dataset-1--statlog-australian">1. Dataset 1 — Statlog Australian</h2>
+<h3 id="11-hipervolumen-hv">1.1 Hipervolumen (HV)</h3>
+<h4 id="resultados">Resultados</h4>
+<table>
+<thead>
+<tr>
+<th>Algoritmo</th>
+<th>N</th>
+<th>Media ± DE</th>
+<th>Mediana [IQR]</th>
+<th>Rango</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MOEACKF</td>
+<td>31</td>
+<td>0.8717 ± 0.0015</td>
+<td>0.8721 [0.8704, 0.8721]</td>
+<td>[0.8688, 0.8753]</td>
+</tr>
+<tr>
+<td>SNSGAII</td>
+<td>31</td>
+<td>0.8781 ± 0.0090</td>
+<td>0.8767 [0.8702, 0.8856]</td>
+<td>[0.8626, 0.8957]</td>
+</tr>
+</tbody>
+</table>
+<p>Wilcoxon signed-rank: <strong>W = 96.0, p = 0.0022</strong> (significativo, α=0.05; tras corrección
+Holm-Bonferroni dentro de la familia <code>principal_snn</code>, p=0.0043, <strong>sigue significativo</strong>).
+SNSGAII superó a MOEACKF en 21/31 corridas pareadas (67.7 %), sin empates. Â₁₂ = 0.323 → efecto
+<strong>grande</strong> (|0.323−0.5| = 0.177, cercano al umbral de 0.21) a favor de SNSGAII.</p>
+<h4 id="discusión">Discusión</h4>
+<p>SNSGAII obtiene un HV mediano y medio estadísticamente superior a MOEACKF en este dataset, con
+un tamaño de efecto grande — no es una diferencia marginal ni producto del azar de una muestra
+chica. Sin embargo, la dispersión cuenta una segunda historia relevante para la tesis: MOEACKF
+es notablemente más <strong>consistente</strong> (DE = 0.0015, IQR de apenas 0.0017) mientras que SNSGAII
+varía casi seis veces más (DE = 0.0090) y su corrida más baja (0.8626) queda por debajo del
+mínimo histórico de MOEACKF (0.8688). Es decir, SNSGAII gana en promedio y en la mayoría de las
+corridas, pero a costa de mayor variabilidad entre ejecuciones — un trade-off exploración/
+consistencia que conviene mencionar explícitamente en la tesis en vez de reportar solo la
+mediana. Las secciones siguientes (frentes, convergencia) muestran de dónde sale esta diferencia.</p>
+<h3 id="12-frentes-de-pareto">1.2 Frentes de Pareto</h3>
+<p><strong>Solución de mejor accuracy por corrida</strong> (fila de <code>f2_train_error</code> mínimo en cada frente):</p>
+<table>
+<thead>
+<tr>
+<th>Indicador</th>
+<th>MOEACKF</th>
+<th>SNSGAII</th>
+<th>p (Wilcoxon)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Complejidad (frac. pesos activos)</td>
+<td>0.0107 ± 0.0044, mediana 0.0088 [0.0074, 0.0140]</td>
+<td>0.0288 ± 0.0214, mediana 0.0221 [0.0132, 0.0375]</td>
+<td>7.78e-05*</td>
+<td>0.226</td>
+</tr>
+<tr>
+<td>Error de entrenamiento</td>
+<td>0.1399 ± 0.0017, mediana 0.1395 [0.1395, 0.1413]</td>
+<td>0.1313 ± 0.0100, mediana 0.1322 [0.1232, 0.1395]</td>
+<td>3.73e-04*</td>
+<td>0.710</td>
+</tr>
+<tr>
+<td>Tamaño del frente</td>
+<td>5.74 ± 0.97, mediana 6 [5, 6]</td>
+<td>7.35 ± 3.05, mediana 7 [5, 9]</td>
+<td>0.0145*</td>
+<td>0.323</td>
+</tr>
+</tbody>
+</table>
+<p>Las tres diferencias son significativas y se mantienen tras corrección Holm-Bonferroni (familia
+<code>principal_snn</code>: p=3.11e-4, 1.12e-3 y 0.0145 respectivamente). SNSGAII paga ~2.5× más complejidad
+en su mejor red (0.022 vs. 0.009) a cambio de un error meliente menor (0.132 vs. 0.140,
+Â₁₂=0.710 grande) y retiene un frente algo más grande. Esto explica directamente la ventaja de
+HV de §1.1: no es una mejora uniforme, sino un desplazamiento hacia soluciones más densas y más
+precisas en el extremo de alta precisión del frente.</p>
+<p><strong>Frente combinado y C-metric</strong>: tamaño MOEACKF=6, SNSGAII=9. C(MOEACKF,SNSGAII)=0.556 (el 55.6%
+de los puntos del frente combinado de SNSGAII están dominados por el de MOEACKF), C(SNSGAII,
+MOEACKF)=0.167 (solo 16.7% en sentido inverso).</p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/comparison/fronts/ds1_combined_front.png" alt="Frente combinado ds1"></p>
+<p>Este resultado matiza el de HV: pese a tener menos puntos, el frente combinado de MOEACKF
+domina más del frente combinado de SNSGAII que al revés — sus 6 soluciones son individualmente
+difíciles de superar. La ventaja de SNSGAII en HV viene de cubrir una región más amplia del
+espacio (9 puntos, incluida la solución de mejor accuracy de la tabla anterior), no de que cada
+punto individual de SNSGAII sea mejor que su contraparte de MOEACKF.</p>
+<p><strong>Error por banda de complejidad</strong> (deciles sobre el pool de puntos crudos de ambos algoritmos):</p>
+<table>
+<thead>
+<tr>
+<th>Banda de complejidad</th>
+<th>MOEACKF error mediano (n)</th>
+<th>SNSGAII error mediano (n)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(-0.001, 0.00147]</td>
+<td>0.4275 (58)</td>
+<td>0.4438 (50)</td>
+</tr>
+<tr>
+<td>(0.00147, 0.00294]</td>
+<td>0.3043 (31)</td>
+<td>0.4393 (10)</td>
+</tr>
+<tr>
+<td>(0.00294, 0.00441]</td>
+<td>0.3043 (18)</td>
+<td>0.4375 (6)</td>
+</tr>
+<tr>
+<td>(0.00441, 0.00588]</td>
+<td>0.1431 (31)</td>
+<td>0.3152 (9)</td>
+</tr>
+<tr>
+<td>(0.00588, 0.00735]</td>
+<td>0.1413 (14)</td>
+<td>0.2699 (21)</td>
+</tr>
+<tr>
+<td>(0.00735, 0.0103]</td>
+<td>0.1413 (14)</td>
+<td>0.2319 (44)</td>
+</tr>
+<tr>
+<td>(0.0103, 0.0132]</td>
+<td>0.1386 (4)</td>
+<td>0.1440 (28)</td>
+</tr>
+<tr>
+<td>(0.0132, 0.0191]</td>
+<td>0.1395 (7)</td>
+<td>0.1377 (23)</td>
+</tr>
+<tr>
+<td>(0.0191, 0.0882]</td>
+<td>0.1395 (1)</td>
+<td>0.1268 (37)</td>
+</tr>
+</tbody>
+</table>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/comparison/fronts/ds1_complexity_bands.png" alt="Error por banda ds1"></p>
+<p>MOEACKF domina claramente en las bandas de complejidad baja-media (hasta ~0.0132), con errores
+notablemente menores que SNSGAII en el mismo rango (p.ej. banda 0.0044–0.0059: 0.143 vs. 0.315).
+SNSGAII recién iguala y supera levemente a MOEACKF en la banda más alta (0.0191–0.0882), pero es
+justamente ahí donde concentra la mayoría de sus puntos (37 de 189 puntos crudos, contra 1 solo
+punto de MOEACKF). El HV agregado de SNSGAII se explica por operar consistentemente en esa
+región de mayor complejidad y precisión, no por dominar en todo el espectro.</p>
+<h3 id="13-convergencia">1.3 Convergencia</h3>
+<p><strong>Curva de convergencia</strong> (HV mediano + banda P10–P90 vs. FE aproximado):</p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/comparison/convergence/ds1_convergence.png" alt="Convergencia ds1"></p>
+<p>MOEACKF converge mucho más rápido al principio (sube abruptamente y se estabiliza ya cerca de
+FE≈3000–4000 en HV≈0.87), mientras SNSGAII arranca más bajo, sube de forma más gradual, y recién
+supera el plateau de MOEACKF alrededor de FE≈11000–13000, terminando levemente más alto.</p>
+<p><strong>Velocidad de convergencia</strong> (FE hasta alcanzar el 95% del HV final de cada corrida):</p>
+<table>
+<thead>
+<tr>
+<th>Grupo</th>
+<th>Mediana [IQR]</th>
+<th>Media ± DE</th>
+<th>p (Wilcoxon)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MOEACKF</td>
+<td>1212.1 [969.7, 1515.2]</td>
+<td>1380.3 ± 651.0</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>SNSGAII</td>
+<td>5226.1 [5025.1, 6733.7]</td>
+<td>5874.5 ± 1377.7</td>
+<td>9.31e-10*</td>
+<td>0.000</td>
+</tr>
+</tbody>
+</table>
+<p>Diferencia significativa tras corrección (p=4.66e-9). Â₁₂=0.000: en las 31 corridas, MOEACKF
+alcanza el 95% de su propio HV final antes que SNSGAII, en promedio ~4.3× más rápido. Esto
+cuantifica lo visible en la curva: MOEACKF es sistemáticamente más rápido para llegar cerca de
+su techo, pero ese techo es más bajo que el de SNSGAII.</p>
+<h3 id="14-plataforma-snn-c-vs-ann-matlab-original">1.4 Plataforma: SNN (C++) vs. ANN (MATLAB original)</h3>
+<table>
+<thead>
+<tr>
+<th>Indicador</th>
+<th>MOEACKF: SNN</th>
+<th>MOEACKF: ANN-MATLAB</th>
+<th>p (Mann-Whitney)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HV</td>
+<td>0.8717 ± 0.0015, mediana 0.8721</td>
+<td>0.8901 ± 0.0018, mediana 0.8891</td>
+<td>1.37e-11*</td>
+<td>0.000</td>
+</tr>
+<tr>
+<td>Complejidad</td>
+<td>0.0107 ± 0.0044, mediana 0.0088</td>
+<td>0.0302 ± 0.0244, mediana 0.0203</td>
+<td>2.58e-07*</td>
+<td>0.120</td>
+</tr>
+<tr>
+<td>Accuracy</td>
+<td>0.8601 ± 0.0017, mediana 0.8605</td>
+<td>0.8817 ± 0.0021, mediana 0.8804</td>
+<td>5.06e-12*</td>
+<td>0.000</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Indicador</th>
+<th>SNSGAII: SNN</th>
+<th>SNSGAII: ANN-MATLAB</th>
+<th>p (Mann-Whitney)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HV</td>
+<td>0.8781 ± 0.0090, mediana 0.8767</td>
+<td>0.8967 ± 0.0025, mediana 0.8972</td>
+<td>5.89e-11*</td>
+<td>0.016</td>
+</tr>
+<tr>
+<td>Complejidad</td>
+<td>0.0288 ± 0.0214, mediana 0.0221</td>
+<td>0.1473 ± 0.2572, mediana 0.0265</td>
+<td>1.33e-04*</td>
+<td>0.221</td>
+</tr>
+<tr>
+<td>Accuracy</td>
+<td>0.8687 ± 0.0100, mediana 0.8678</td>
+<td>0.8892 ± 0.0024, mediana 0.8895</td>
+<td>3.12e-11*</td>
+<td>0.011</td>
+</tr>
+</tbody>
+</table>
+<p>Las seis comparaciones son significativas y se mantienen tras corrección Holm-Bonferroni (familia
+<code>plataforma</code>, p ajustados entre 2.6e-11 y 9.4e-11 para HV/accuracy, y 2.58e-07/1.33e-04 para
+complejidad). La implementación original en ANN (MATLAB) supera de forma consistente a la SNN en
+HV y accuracy para ambos algoritmos, con una brecha de accuracy de ~0.02 en los dos casos — un
+patrón esperable dado que la dinámica de disparo añade una capa de aproximación que una ANN
+estándar no enfrenta. La red de mejor accuracy en ANN también tiende a ser más densa (0.030 vs.
+0.011 para MOEACKF; para SNSGAII la mediana es similar pero la media y el rango se disparan por
+algunas corridas MATLAB que llegan a redes casi densas).</p>
+<h3 id="15-bootstrap-vs-evaluación-completa">1.5 Bootstrap vs. evaluación completa</h3>
+<table>
+<thead>
+<tr>
+<th>Algoritmo</th>
+<th>Normal</th>
+<th>Bootstrap</th>
+<th>p (Wilcoxon)</th>
+<th>Â₁₂</th>
+<th>Tiempo mediano (×)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MOEACKF</td>
+<td>0.8717 ± 0.0015, mediana 0.8721</td>
+<td>0.8832 ± 0.0025, mediana 0.8830</td>
+<td>9.31e-10*</td>
+<td>0.000</td>
+<td>209 s → 1734 s (×8.3)</td>
+</tr>
+<tr>
+<td>SNSGAII</td>
+<td>0.8781 ± 0.0090, mediana 0.8767</td>
+<td>0.8870 ± 0.0076, mediana 0.8879</td>
+<td>8.66e-05*</td>
+<td>0.258</td>
+<td>940 s → 14195 s (×15.1)</td>
+</tr>
+</tbody>
+</table>
+<p>Ambas diferencias significativas tras corrección (familia <code>bootstrap</code>, p=1.86e-9 y 8.66e-5). El
+remuestreo bootstrap mejora el HV para los dos algoritmos en este dataset, de forma casi
+absoluta para MOEACKF (Â₁₂=0.000: bootstrap gana las 31 corridas) y con efecto grande también
+para SNSGAII, a un costo computacional considerable (8.3× y 15.1× respectivamente).</p>
+<h3 id="16-tiempo-de-cómputo">1.6 Tiempo de cómputo</h3>
+<table>
+<thead>
+<tr>
+<th>Grupo</th>
+<th>Mediana [IQR]</th>
+<th>Media ± DE</th>
+<th>p (Wilcoxon)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MOEACKF</td>
+<td>285.6 [263.7, 288.2] s</td>
+<td>277.4 ± 15.4 s</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>SNSGAII</td>
+<td>259.6 [258.4, 260.5] s</td>
+<td>259.5 ± 2.5 s</td>
+<td>0.00153*</td>
+<td>0.867</td>
+</tr>
+</tbody>
+</table>
+<p>Diferencia significativa (familia <code>tiempo</code>, m=1, sin corrección adicional). SNSGAII es más
+rápido, con efecto grande (Â₁₂=0.867) y mucha menos variabilidad entre corridas (DE=2.5s vs.
+15.4s de MOEACKF).</p>
+<h2 id="2-dataset-2--climate">2. Dataset 2 — Climate</h2>
+<h3 id="21-hipervolumen-hv">2.1 Hipervolumen (HV)</h3>
+<h4 id="resultados-1">Resultados</h4>
+<table>
+<thead>
+<tr>
+<th>Algoritmo</th>
+<th>N</th>
+<th>Media ± DE</th>
+<th>Mediana [IQR]</th>
+<th>Rango</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MOEACKF</td>
+<td>31</td>
+<td>0.9276 ± 0.0036</td>
+<td>0.9256 [0.9255, 0.9285]</td>
+<td>[0.9235, 0.9361]</td>
+</tr>
+<tr>
+<td>SNSGAII</td>
+<td>31</td>
+<td>0.9273 ± 0.0015</td>
+<td>0.9278 [0.9257, 0.9278]</td>
+<td>[0.9256, 0.9299]</td>
+</tr>
+</tbody>
+</table>
+<p>Wilcoxon signed-rank: <strong>W = 199.0, p = 0.347</strong> (no significativo, α=0.05; tras corrección,
+p=0.694, sigue sin serlo). SNSGAII superó a MOEACKF en 23/31 corridas (74.2 %), pero Â₁₂ = 0.258.</p>
+<h4 id="discusión-1">Discusión</h4>
+<p>Este dataset es el único caso donde el conteo de &quot;victorias&quot; por corrida (Â₁₂) y el resultado
+de significancia del Wilcoxon <strong>divergen</strong>: SNSGAII gana más seguido, pero por márgenes mínimos
+(diferencia mediana de solo 0.00016), mientras que las pocas corridas donde gana MOEACKF lo hace
+por márgenes más grandes (su máximo, 0.9361, supera ampliamente el máximo de SNSGAII, 0.9299).
+No hay evidencia suficiente de una diferencia real entre ambos algoritmos en HV para este
+dataset: ambos convergen a una región muy similar y estrecha. Las secciones siguientes muestran
+que, aun sin diferencia en HV, los frentes de cada algoritmo llegan ahí por caminos muy distintos.</p>
+<h3 id="22-frentes-de-pareto">2.2 Frentes de Pareto</h3>
+<p><strong>Solución de mejor accuracy por corrida</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Indicador</th>
+<th>MOEACKF</th>
+<th>SNSGAII</th>
+<th>p (Wilcoxon)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Complejidad (frac. pesos activos)</td>
+<td>0.0752 ± 0.1386, mediana 0.0190 [0.0083, 0.0363]</td>
+<td>0.0032 ± 0.0008, mediana 0.0036 [0.0024, 0.0036]</td>
+<td>9.31e-10*</td>
+<td>1.000</td>
+</tr>
+<tr>
+<td>Error de entrenamiento</td>
+<td>0.0786 ± 0.0038, mediana 0.0810 [0.0775, 0.0810]</td>
+<td>0.0792 ± 0.0017, mediana 0.0787 [0.0787, 0.0810]</td>
+<td>0.5345</td>
+<td>0.565</td>
+</tr>
+<tr>
+<td>Tamaño del frente</td>
+<td>6.61 ± 1.17, mediana 7 [6, 7]</td>
+<td>3.42 ± 0.67, mediana 3 [3, 4]</td>
+<td>1.42e-06*</td>
+<td>0.984</td>
+</tr>
+</tbody>
+</table>
+<p>Complejidad y tamaño del frente siguen siendo significativos tras corrección (p=4.66e-9 y
+5.69e-6); el error de la mejor red no lo es (p=0.694, igual que el HV agregado). El resultado más
+llamativo es la complejidad: SNSGAII encuentra una red de mejor accuracy <strong>extremadamente rala</strong>
+(mediana 0.0036 — apenas ~3 pesos activos de 840) con Â₁₂=1.000 (gana las 31 corridas), logrando
+un error estadísticamente indistinguible del de MOEACKF, que necesita una red bastante más densa
+y variable (mediana 0.019, pero con corridas que llegan mucho más alto — DE=0.14, casi el doble
+de la propia mediana). SNSGAII también retiene un frente mucho más chico (mediana 3 vs. 7).</p>
+<p><strong>Frente combinado y C-metric</strong>: tamaño MOEACKF=8, SNSGAII=4. C(MOEACKF,SNSGAII)=0.500,
+C(SNSGAII,MOEACKF)=0.500 — cobertura perfectamente simétrica pese a la diferencia de tamaño.</p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/comparison/fronts/ds2_combined_front.png" alt="Frente combinado ds2"></p>
+<p><strong>Error por banda de complejidad</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Banda de complejidad</th>
+<th>MOEACKF error mediano (n)</th>
+<th>SNSGAII error mediano (n)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(-0.001, 0.00119]</td>
+<td>0.4167 (56)</td>
+<td>0.4213 (53)</td>
+</tr>
+<tr>
+<td>(0.00119, 0.00238]</td>
+<td>0.1343 (31)</td>
+<td>0.0810 (31)</td>
+</tr>
+<tr>
+<td>(0.00238, 0.00357]</td>
+<td>0.1319 (19)</td>
+<td>0.0787 (19)</td>
+</tr>
+<tr>
+<td>(0.00357, 0.00476]</td>
+<td>0.0856 (30)</td>
+<td>0.0764 (3)</td>
+</tr>
+<tr>
+<td>(0.00476, 0.00595]</td>
+<td>0.0833 (12)</td>
+<td>— (0)</td>
+</tr>
+<tr>
+<td>(0.00595, 0.0119]</td>
+<td>0.0810 (28)</td>
+<td>— (0)</td>
+</tr>
+<tr>
+<td>(0.0119, 0.557]</td>
+<td>0.0787 (29)</td>
+<td>— (0)</td>
+</tr>
+</tbody>
+</table>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/comparison/fronts/ds2_complexity_bands.png" alt="Error por banda ds2"></p>
+<p>SNSGAII prácticamente no tiene puntos más allá de la banda 4 (0.0036–0.0048): sus 31 corridas
+concentran casi toda su masa en las bandas de menor complejidad, y ahí su error es
+consistentemente <strong>menor</strong> que el de MOEACKF en las mismas bandas (p.ej. banda 2:
+0.081 vs. 0.134). MOEACKF, en cambio, reparte sus puntos en un rango de complejidad mucho más
+amplio sin ganar precisión por ello en la zona rala. Climate parece ser un dataset donde
+SNSGAII &quot;se especializa&quot; en soluciones ultra-ralas y lo hace bien, mientras MOEACKF explora más
+sin una ganancia proporcional — coherente con que el HV agregado no distinga a los algoritmos
+(§2.1): son perfiles de frente muy distintos que terminan en una región de calidad similar.</p>
+<h3 id="23-convergencia">2.3 Convergencia</h3>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/comparison/convergence/ds2_convergence.png" alt="Convergencia ds2"></p>
+<p><strong>Velocidad de convergencia</strong> (FE hasta 95% y 90% del HV final):</p>
+<table>
+<thead>
+<tr>
+<th>Umbral</th>
+<th>MOEACKF</th>
+<th>SNSGAII</th>
+<th>p (Wilcoxon)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>95% del HV final</td>
+<td>73.97 ± 85.61, mediana 0 [0, 127.4]</td>
+<td>9.73 ± 39.82, mediana 0 [0, 0]</td>
+<td>4.75e-04*</td>
+<td>0.694</td>
+</tr>
+<tr>
+<td>90% del HV final</td>
+<td>0 ± 0, mediana 0 [0, 0]</td>
+<td>0 ± 0, mediana 0 [0, 0]</td>
+<td>1.0 (sin diferencia)</td>
+<td>0.500</td>
+</tr>
+</tbody>
+</table>
+<p>Climate es un caso límite: en las 31 corridas de <strong>ambos</strong> algoritmos, la población inicial
+(generación 0) ya alcanza el 90% del HV final — no hay evidencia de diferencia alguna en ese
+umbral (<code>x == y</code> en los 31 pares). Al 95% sí hay una diferencia significativa (tras corrección,
+p=1.43e-3), con SNSGAII llegando más seguido ya en FE≈0. Esto confirma cuantitativamente lo que
+sugiere la curva: Climate es un problema comparativamente &quot;saturado&quot; donde el margen de mejora
+sobre la población inicial es pequeño para los dos algoritmos, así que &quot;velocidad de convergencia&quot;
+aquí mide más bien qué tan rápido se estabiliza la búsqueda que una carrera real de optimización.</p>
+<h3 id="24-plataforma-snn-c-vs-ann-matlab-original">2.4 Plataforma: SNN (C++) vs. ANN (MATLAB original)</h3>
+<table>
+<thead>
+<tr>
+<th>Indicador</th>
+<th>MOEACKF: SNN</th>
+<th>MOEACKF: ANN-MATLAB</th>
+<th>p (Mann-Whitney)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HV</td>
+<td>0.9276 ± 0.0036, mediana 0.9256</td>
+<td>0.9760 ± 0.0034, mediana 0.9767</td>
+<td>1.40e-11*</td>
+<td>0.000</td>
+</tr>
+<tr>
+<td>Complejidad</td>
+<td>0.0752 ± 0.1386, mediana 0.0190</td>
+<td>0.0565 ± 0.0255, mediana 0.0487</td>
+<td>2.37e-04*</td>
+<td>0.228</td>
+</tr>
+<tr>
+<td>Accuracy</td>
+<td>0.9214 ± 0.0038, mediana 0.9190</td>
+<td>0.9760 ± 0.0039, mediana 0.9768</td>
+<td>6.06e-12*</td>
+<td>0.000</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Indicador</th>
+<th>SNSGAII: SNN</th>
+<th>SNSGAII: ANN-MATLAB</th>
+<th>p (Mann-Whitney)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HV</td>
+<td>0.9273 ± 0.0015, mediana 0.9278</td>
+<td>0.9493 ± 0.0064, mediana 0.9477</td>
+<td>1.39e-11*</td>
+<td>0.000</td>
+</tr>
+<tr>
+<td>Complejidad</td>
+<td>0.0032 ± 0.0008, mediana 0.0036</td>
+<td>0.8367 ± 0.1867, mediana 0.9114</td>
+<td>7.72e-12*</td>
+<td>0.000</td>
+</tr>
+<tr>
+<td>Accuracy</td>
+<td>0.9208 ± 0.0017, mediana 0.9213</td>
+<td>0.9657 ± 0.0060, mediana 0.9653</td>
+<td>8.20e-12*</td>
+<td>0.000</td>
+</tr>
+</tbody>
+</table>
+<p>Todo significativo tras corrección. La brecha ANN-SNN en HV es la más grande de los cuatro
+datasets para MOEACKF (0.976 vs. 0.928, ~5 puntos). La complejidad diverge fuertemente por
+algoritmo: para MOEACKF la red ANN es apenas algo más rala que la SNN (0.056 vs. 0.075); para
+SNSGAII, en cambio, la red ANN de mejor accuracy es <strong>casi completamente densa</strong> (mediana 0.911,
+más del 90% de los pesos activos) frente a la red SNN ultra-rala de §2.2 (mediana 0.0036). Es la
+divergencia de plataforma más extrema del estudio: para llegar a su mejor accuracy, SNSGAII-ANN
+necesita casi todos los pesos activos, mientras que SNSGAII-SNN logra un error estadísticamente
+similar (§2.2) con una fracción minúscula de la red. Sujeto a las salvedades de §6 (RNG e
+implementación distintos), esto sugiere que el sustrato spiking podría favorecer soluciones
+ralas para este algoritmo-dataset en particular — una hipótesis a confirmar, no una conclusión
+causal con el diseño actual.</p>
+<h3 id="25-bootstrap-vs-evaluación-completa">2.5 Bootstrap vs. evaluación completa</h3>
+<table>
+<thead>
+<tr>
+<th>Algoritmo</th>
+<th>Normal</th>
+<th>Bootstrap</th>
+<th>p (Wilcoxon)</th>
+<th>Â₁₂</th>
+<th>Tiempo mediano (×)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MOEACKF</td>
+<td>0.9276 ± 0.0036, mediana 0.9256</td>
+<td>0.9404 ± 0.0015, mediana 0.9401</td>
+<td>9.31e-10*</td>
+<td>0.000</td>
+<td>1805 s → 8749 s (×4.8)</td>
+</tr>
+<tr>
+<td>SNSGAII</td>
+<td>0.9273 ± 0.0015, mediana 0.9278</td>
+<td>0.9400 ± 0.0013, mediana 0.9399</td>
+<td>9.31e-10*</td>
+<td>0.000</td>
+<td>202 s → 998 s (×4.9)</td>
+</tr>
+</tbody>
+</table>
+<p>Ambas diferencias significativas tras corrección (p=1.86e-9 en ambos casos). A diferencia del
+HV entre algoritmos (sin diferencia en este dataset, §2.1), el bootstrap sí produce una mejora
+grande y perfectamente consistente (Â₁₂=0.000 en los dos algoritmos: bootstrap gana las 31
+corridas) con el menor costo relativo de tiempo de los cuatro datasets (×4.8–4.9, frente a
+×5–15 en el resto).</p>
+<h3 id="26-tiempo-de-cómputo">2.6 Tiempo de cómputo</h3>
+<table>
+<thead>
+<tr>
+<th>Grupo</th>
+<th>Mediana [IQR]</th>
+<th>Media ± DE</th>
+<th>p (Wilcoxon)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MOEACKF</td>
+<td>230.5 [224.0, 235.2] s</td>
+<td>233.0 ± 20.3 s</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>SNSGAII</td>
+<td>216.7 [216.0, 217.0] s</td>
+<td>216.2 ± 1.7 s</td>
+<td>8.54e-04*</td>
+<td>0.867</td>
+</tr>
+</tbody>
+</table>
+<p>Diferencia significativa, SNSGAII más rápido (efecto grande) y con mucha menor variabilidad.</p>
+<h2 id="3-dataset-3--german">3. Dataset 3 — German</h2>
+<h3 id="31-hipervolumen-hv">3.1 Hipervolumen (HV)</h3>
+<h4 id="resultados-2">Resultados</h4>
+<table>
+<thead>
+<tr>
+<th>Algoritmo</th>
+<th>N</th>
+<th>Media ± DE</th>
+<th>Mediana [IQR]</th>
+<th>Rango</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MOEACKF</td>
+<td>31</td>
+<td>0.7511 ± 0.0060</td>
+<td>0.7520 [0.7452, 0.7560]</td>
+<td>[0.7429, 0.7622]</td>
+</tr>
+<tr>
+<td>SNSGAII</td>
+<td>31</td>
+<td>0.7645 ± 0.0160</td>
+<td>0.7643 [0.7547, 0.7754]</td>
+<td>[0.7349, 0.7999]</td>
+</tr>
+</tbody>
+</table>
+<p>Wilcoxon signed-rank: <strong>W = 50.0, p = 2.8 × 10⁻⁵</strong> (altamente significativo; tras corrección,
+p=8.47e-5, sigue significativo). SNSGAII superó a MOEACKF en 24/31 corridas (77.4 %). Â₁₂ = 0.226
+→ efecto <strong>grande</strong> a favor de SNSGAII.</p>
+<h4 id="discusión-2">Discusión</h4>
+<p>Resultado contundente a favor de SNSGAII: la diferencia de medianas (0.0133) y de medias
+(0.0134) es la segunda mayor de los cuatro datasets, y a diferencia del dataset 2, acá la
+dirección del conteo de victorias y la magnitud de las diferencias coinciden. SNSGAII vuelve a
+mostrar mayor dispersión que MOEACKF (DE=0.0160 vs. 0.0060), pero incluso su corrida más baja
+(0.7349) queda cerca de la mediana de MOEACKF, por lo que la mayor variabilidad no compromete
+tanto la fiabilidad del resultado.</p>
+<h3 id="32-frentes-de-pareto">3.2 Frentes de Pareto</h3>
+<p><strong>Solución de mejor accuracy por corrida</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Indicador</th>
+<th>MOEACKF</th>
+<th>SNSGAII</th>
+<th>p (Wilcoxon)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Complejidad (frac. pesos activos)</td>
+<td>0.0182 ± 0.0216, mediana 0.0065 [0.0042, 0.0269]</td>
+<td>0.0414 ± 0.0360, mediana 0.0296 [0.0204, 0.0468]</td>
+<td>0.00915*</td>
+<td>0.226</td>
+</tr>
+<tr>
+<td>Error de entrenamiento</td>
+<td>0.2734 ± 0.0068, mediana 0.2725 [0.2681, 0.2800]</td>
+<td>0.2583 ± 0.0179, mediana 0.2587 [0.2462, 0.2694]</td>
+<td>8.90e-05*</td>
+<td>0.790</td>
+</tr>
+<tr>
+<td>Tamaño del frente</td>
+<td>5.52 ± 2.11, mediana 5 [4, 7]</td>
+<td>9.13 ± 2.51, mediana 9 [8, 10.5]</td>
+<td>1.85e-05*</td>
+<td>0.161</td>
+</tr>
+</tbody>
+</table>
+<p>Los tres indicadores significativos tras corrección (p=9.15e-3, 1.78e-4, 7.41e-5). Mismo patrón
+cualitativo que el dataset 1: SNSGAII paga más complejidad en su mejor red (0.030 vs. 0.007) a
+cambio de menor error (0.259 vs. 0.273, efecto grande) y retiene un frente sustancialmente más
+grande (9 vs. 5) — de los cuatro datasets, este es el más consistente con la narrativa &quot;SNSGAII
+gana explorando redes más densas y numerosas&quot;.</p>
+<p><strong>Frente combinado y C-metric</strong>: tamaño MOEACKF=6, SNSGAII=13. C(MOEACKF,SNSGAII)=0.308,
+C(SNSGAII,MOEACKF)=0.333 — cobertura mutua similar pese a que el frente de SNSGAII es más del
+doble de grande.</p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/comparison/fronts/ds3_combined_front.png" alt="Frente combinado ds3"></p>
+<p><strong>Error por banda de complejidad</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Banda de complejidad</th>
+<th>MOEACKF error mediano (n)</th>
+<th>SNSGAII error mediano (n)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(-0.001, 0.000926]</td>
+<td>0.4350 (55)</td>
+<td>0.4456 (56)</td>
+</tr>
+<tr>
+<td>(0.000926, 0.00185]</td>
+<td>0.2825 (31)</td>
+<td>0.2988 (31)</td>
+</tr>
+<tr>
+<td>(0.00185, 0.00278]</td>
+<td>0.2800 (20)</td>
+<td>— (0)</td>
+</tr>
+<tr>
+<td>(0.00278, 0.00556]</td>
+<td>0.2800 (21)</td>
+<td>0.2863 (31)</td>
+</tr>
+<tr>
+<td>(0.00556, 0.00741]</td>
+<td>0.2712 (4)</td>
+<td>0.2775 (26)</td>
+</tr>
+<tr>
+<td>(0.00741, 0.0111]</td>
+<td>0.2712 (7)</td>
+<td>0.2700 (41)</td>
+</tr>
+<tr>
+<td>(0.0111, 0.0176]</td>
+<td>0.2750 (5)</td>
+<td>0.2662 (39)</td>
+</tr>
+<tr>
+<td>(0.0176, 0.0315]</td>
+<td>0.2712 (11)</td>
+<td>0.2562 (31)</td>
+</tr>
+<tr>
+<td>(0.0315, 0.138]</td>
+<td>0.2700 (17)</td>
+<td>0.2575 (28)</td>
+</tr>
+</tbody>
+</table>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/comparison/fronts/ds3_complexity_bands.png" alt="Error por banda ds3"></p>
+<p>En las bandas de menor complejidad ambos algoritmos son similares (incluso MOEACKF algo mejor);
+a partir de la banda 5 (complejidad ≥0.0056) SNSGAII pasa a tener error consistentemente menor,
+y la brecha se ensancha hacia las bandas más altas (0.0176–0.0315: 0.256 vs. 0.271). SNSGAII
+aprovecha mejor la complejidad adicional en este dataset, lo que es coherente con su frente
+combinado más grande (13 vs. 6 puntos) y con la ventaja de HV de §3.1.</p>
+<h3 id="33-convergencia">3.3 Convergencia</h3>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/comparison/convergence/ds3_convergence.png" alt="Convergencia ds3"></p>
+<p>La curva muestra a SNSGAII arrancando mucho más bajo (~0.654) y subiendo con pendiente
+pronunciada, cruzando a MOEACKF alrededor de FE≈4500–5000 y terminando por encima (~0.764 vs.
+~0.752 de MOEACKF, que se aplana muy temprano).</p>
+<p><strong>Velocidad de convergencia</strong> (FE hasta 95% del HV final):</p>
+<table>
+<thead>
+<tr>
+<th>Grupo</th>
+<th>Mediana [IQR]</th>
+<th>Media ± DE</th>
+<th>p (Wilcoxon)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MOEACKF</td>
+<td>0 [0, 0]</td>
+<td>37.4 ± 81.4</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>SNSGAII</td>
+<td>3408.5 [2456.1, 3909.8]</td>
+<td>3250.1 ± 953.8</td>
+<td>9.31e-10*</td>
+<td>0.000</td>
+</tr>
+</tbody>
+</table>
+<p>Diferencia significativa tras corrección (p=4.66e-9). Resultado paradójico pero coherente con la
+curva: aunque SNSGAII logra el HV <strong>final</strong> más alto (§3.1), es MOEACKF quien llega casi
+instantáneamente (mediana FE≈0) al 95% de su propio techo — más bajo, pero alcanzado de
+inmediato — mientras SNSGAII necesita ~3400 FE (8.5% del presupuesto total de 40000) para llegar
+al 95% de su techo, más alto. Es un ejemplo claro del trade-off velocidad/calidad: MOEACKF se
+estabiliza rápido en un techo menor, SNSGAII tarda más en llegar a uno mayor.</p>
+<h3 id="34-plataforma-snn-c-vs-ann-matlab-original">3.4 Plataforma: SNN (C++) vs. ANN (MATLAB original)</h3>
+<table>
+<thead>
+<tr>
+<th>Indicador</th>
+<th>MOEACKF: SNN</th>
+<th>MOEACKF: ANN-MATLAB</th>
+<th>p (Mann-Whitney)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HV</td>
+<td>0.7511 ± 0.0060, mediana 0.7520</td>
+<td>0.8100 ± 0.0024, mediana 0.8098</td>
+<td>1.40e-11*</td>
+<td>0.000</td>
+</tr>
+<tr>
+<td>Complejidad</td>
+<td>0.0182 ± 0.0216, mediana 0.0065</td>
+<td>0.0509 ± 0.0221, mediana 0.0413</td>
+<td>1.26e-06*</td>
+<td>0.142</td>
+</tr>
+<tr>
+<td>Accuracy</td>
+<td>0.7266 ± 0.0068, mediana 0.7275</td>
+<td>0.7927 ± 0.0027, mediana 0.7925</td>
+<td>1.20e-11*</td>
+<td>0.000</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Indicador</th>
+<th>SNSGAII: SNN</th>
+<th>SNSGAII: ANN-MATLAB</th>
+<th>p (Mann-Whitney)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HV</td>
+<td>0.7645 ± 0.0160, mediana 0.7643</td>
+<td>0.8118 ± 0.0025, mediana 0.8119</td>
+<td>1.40e-11*</td>
+<td>0.000</td>
+</tr>
+<tr>
+<td>Complejidad</td>
+<td>0.0414 ± 0.0360, mediana 0.0296</td>
+<td>0.6659 ± 0.3744, mediana 0.8751</td>
+<td>6.89e-10*</td>
+<td>0.044</td>
+</tr>
+<tr>
+<td>Accuracy</td>
+<td>0.7417 ± 0.0179, mediana 0.7412</td>
+<td>0.7987 ± 0.0036, mediana 0.7975</td>
+<td>1.33e-11*</td>
+<td>0.000</td>
+</tr>
+</tbody>
+</table>
+<p>Todo significativo tras corrección. Mismo patrón que el dataset 2: la red ANN de MOEACKF es
+moderadamente más densa que la SNN (0.051 vs. 0.018), mientras que la red ANN de SNSGAII vuelve
+a ser casi totalmente densa (mediana 0.875) frente a la SNN mucho más rala (0.030). El gap de
+complejidad ANN-vs-SNN de SNSGAII es sistemáticamente mucho mayor que el de MOEACKF en los
+cuatro datasets (ver síntesis, §5) — un patrón que se repite, no un caso aislado de Climate.</p>
+<h3 id="35-bootstrap-vs-evaluación-completa">3.5 Bootstrap vs. evaluación completa</h3>
+<table>
+<thead>
+<tr>
+<th>Algoritmo</th>
+<th>Normal</th>
+<th>Bootstrap</th>
+<th>p (Wilcoxon)</th>
+<th>Â₁₂</th>
+<th>Tiempo mediano (×)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MOEACKF</td>
+<td>0.7511 ± 0.0060, mediana 0.7520</td>
+<td>0.7568 ± 0.0031, mediana 0.7567</td>
+<td>1.95e-04*</td>
+<td>0.226</td>
+<td>1207 s → 6222 s (×5.2)</td>
+</tr>
+<tr>
+<td>SNSGAII</td>
+<td>0.7645 ± 0.0160, mediana 0.7643</td>
+<td>0.7580 ± 0.0090, mediana 0.7549</td>
+<td>0.0664</td>
+<td>0.710</td>
+<td>914 s → 6854 s (×7.5)</td>
+</tr>
+</tbody>
+</table>
+<p>MOEACKF mejora significativamente con bootstrap (tras corrección, p=3.91e-4), pero SNSGAII
+<strong>no</strong> (p=0.066, no sobrevive ni al umbral crudo de 0.05): German es el primer dataset donde el
+bootstrap no ayuda de forma uniforme. Más aún, la dirección de Â₁₂=0.710 para SNSGAII sugiere
+que la evaluación normal iguala o supera a la bootstrap más seguido que al revés, aunque sin
+significancia estadística — no se puede afirmar que el bootstrap perjudique a SNSGAII en este
+dataset, pero tampoco que lo ayude, pese a un costo de tiempo considerable (×7.5).</p>
+<h3 id="36-tiempo-de-cómputo">3.6 Tiempo de cómputo</h3>
+<table>
+<thead>
+<tr>
+<th>Grupo</th>
+<th>Mediana [IQR]</th>
+<th>Media ± DE</th>
+<th>p (Wilcoxon)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MOEACKF</td>
+<td>936.6 [895.7, 956.1] s</td>
+<td>928.7 ± 37.1 s</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>SNSGAII</td>
+<td>871.3 [858.9, 883.0] s</td>
+<td>867.7 ± 20.7 s</td>
+<td>4.27e-04*</td>
+<td>0.933</td>
+</tr>
+</tbody>
+</table>
+<p>Diferencia significativa, SNSGAII más rápido, efecto grande.</p>
+<h2 id="4-dataset-4--sonar">4. Dataset 4 — Sonar</h2>
+<h3 id="41-hipervolumen-hv">4.1 Hipervolumen (HV)</h3>
+<h4 id="resultados-3">Resultados</h4>
+<table>
+<thead>
+<tr>
+<th>Algoritmo</th>
+<th>N</th>
+<th>Media ± DE</th>
+<th>Mediana [IQR]</th>
+<th>Rango</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MOEACKF</td>
+<td>31</td>
+<td>0.8224 ± 0.0302</td>
+<td>0.8274 [0.8141, 0.8432]</td>
+<td>[0.7494, 0.8618]</td>
+</tr>
+<tr>
+<td>SNSGAII</td>
+<td>31</td>
+<td>0.7808 ± 0.0374</td>
+<td>0.7812 [0.7601, 0.8059]</td>
+<td>[0.6840, 0.8435]</td>
+</tr>
+</tbody>
+</table>
+<p>Wilcoxon signed-rank: <strong>W = 60.0, p = 8.7 × 10⁻⁵</strong> (altamente significativo; tras corrección,
+p=2.60e-4, sigue significativo). MOEACKF superó a SNSGAII en 22/31 corridas (71.0 %). Â₁₂ = 0.710
+→ efecto <strong>grande</strong> a favor de MOEACKF.</p>
+<h4 id="discusión-3">Discusión</h4>
+<p>Sonar es el único dataset donde se invierte el patrón de los tres anteriores: MOEACKF supera a
+SNSGAII de forma significativa y con la mayor diferencia absoluta de HV observada en todo el
+estudio (Δmedia = 0.0417). También es el dataset con mayor varianza para ambos algoritmos
+(DE≈0.03–0.04), consistente con que Sonar es, de los cuatro, el de mayor dimensionalidad (60
+features) y por lo tanto el de paisaje de optimización más difícil. Las secciones siguientes
+muestran que acá MOEACKF no gana solo en el agregado: domina en casi todos los indicadores
+individuales.</p>
+<h3 id="42-frentes-de-pareto">4.2 Frentes de Pareto</h3>
+<p><strong>Solución de mejor accuracy por corrida</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Indicador</th>
+<th>MOEACKF</th>
+<th>SNSGAII</th>
+<th>p (Wilcoxon)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Complejidad (frac. pesos activos)</td>
+<td>0.0792 ± 0.0953, mediana 0.0429 [0.0208, 0.0847]</td>
+<td>0.0188 ± 0.0141, mediana 0.0159 [0.0077, 0.0270]</td>
+<td>1.07e-04*</td>
+<td>0.742</td>
+</tr>
+<tr>
+<td>Error de entrenamiento</td>
+<td>0.1876 ± 0.0327, mediana 0.1796 [0.1677, 0.1976]</td>
+<td>0.2403 ± 0.0417, mediana 0.2395 [0.2126, 0.2635]</td>
+<td>4.77e-05*</td>
+<td>0.194</td>
+</tr>
+<tr>
+<td>Tamaño del frente</td>
+<td>11.26 ± 3.28, mediana 12 [9, 13]</td>
+<td>8.71 ± 3.44, mediana 8 [7, 10.5]</td>
+<td>0.0166*</td>
+<td>0.645</td>
+</tr>
+</tbody>
+</table>
+<p>Todo significativo tras corrección (p=2.60e-4, 1.91e-4, 0.0166). A diferencia de los datasets 1
+y 3, acá MOEACKF <strong>no</strong> cede complejidad por precisión: su red de mejor accuracy es a la vez más
+densa (0.043 vs. 0.016) y más precisa (error 0.180 vs. 0.240) que la de SNSGAII, y además retiene
+un frente más grande (12 vs. 8). Es el único dataset donde un algoritmo domina de forma tan
+directa en los tres indicadores del frente a la vez.</p>
+<p><strong>Frente combinado y C-metric</strong>: tamaño MOEACKF=14, SNSGAII=14 (iguales). C(MOEACKF,SNSGAII)=
+<strong>0.857</strong>, C(SNSGAII,MOEACKF)=0.143 — el resultado más asimétrico de los cuatro datasets.</p>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/comparison/fronts/ds4_combined_front.png" alt="Frente combinado ds4"></p>
+<p>El 85.7% de los puntos del frente combinado de SNSGAII están dominados por el de MOEACKF,
+mientras que solo el 14.3% ocurre en sentido inverso, pese a que ambos frentes combinados tienen
+el mismo tamaño (14 puntos). Es la evidencia más contundente del estudio de que un algoritmo
+domina &quot;punto a punto&quot;, no solo en el resumen agregado de HV.</p>
+<p><strong>Error por banda de complejidad</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Banda de complejidad</th>
+<th>MOEACKF error mediano (n)</th>
+<th>SNSGAII error mediano (n)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(-0.001, 0.000397]</td>
+<td>0.3593 (59)</td>
+<td>0.3862 (38)</td>
+</tr>
+<tr>
+<td>(0.000397, 0.00159]</td>
+<td>0.3503 (2)</td>
+<td>0.3743 (28)</td>
+</tr>
+<tr>
+<td>(0.00159, 0.00317]</td>
+<td>0.2934 (23)</td>
+<td>0.3234 (51)</td>
+</tr>
+<tr>
+<td>(0.00317, 0.00437]</td>
+<td>0.2754 (22)</td>
+<td>0.2874 (39)</td>
+</tr>
+<tr>
+<td>(0.00437, 0.00595]</td>
+<td>0.2425 (26)</td>
+<td>0.2695 (33)</td>
+</tr>
+<tr>
+<td>(0.00595, 0.00913]</td>
+<td>0.2216 (23)</td>
+<td>0.2455 (32)</td>
+</tr>
+<tr>
+<td>(0.00913, 0.0163]</td>
+<td>0.2156 (29)</td>
+<td>0.2275 (29)</td>
+</tr>
+<tr>
+<td>(0.0163, 0.0329]</td>
+<td>0.2096 (48)</td>
+<td>0.2635 (13)</td>
+</tr>
+<tr>
+<td>(0.0329, 0.0787]</td>
+<td>0.2156 (55)</td>
+<td>0.2036 (7)</td>
+</tr>
+<tr>
+<td>(0.0787, 0.386]</td>
+<td>0.2216 (62)</td>
+<td>— (0)</td>
+</tr>
+</tbody>
+</table>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/comparison/fronts/ds4_complexity_bands.png" alt="Error por banda ds4"></p>
+<p>MOEACKF tiene error menor que SNSGAII en casi todo el espectro de complejidad (bandas 2 a 8),
+con SNSGAII apenas adelante en una banda alta angosta (0.0329–0.0787, con solo 7 puntos de
+SNSGAII, muestra chica) y MOEACKF siendo el único que alcanza la banda más alta (0.0787–0.386,
+62 puntos). La ventaja de MOEACKF en Sonar es amplia y no se concentra en una sola región del
+espacio de complejidad, a diferencia de lo que ocurre con SNSGAII en los datasets 1 y 3.</p>
+<h3 id="43-convergencia">4.3 Convergencia</h3>
+<p><img src="file:////home/nez/Desktop/tesis-snn/platemo-cpp/comparison/convergence/ds4_convergence.png" alt="Convergencia ds4"></p>
+<p>MOEACKF se mantiene por encima de SNSGAII durante todo el presupuesto, y todavía sube lentamente
+cerca de FE=40000 (no está del todo aplanado), mientras SNSGAII se estabiliza antes
+(FE≈20000–25000) en un nivel claramente inferior.</p>
+<p><strong>Velocidad de convergencia</strong> (FE hasta 95% del HV final):</p>
+<table>
+<thead>
+<tr>
+<th>Grupo</th>
+<th>Mediana [IQR]</th>
+<th>Media ± DE</th>
+<th>p (Wilcoxon)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MOEACKF</td>
+<td>13626.4 [10622.7, 18901.1]</td>
+<td>14363.7 ± 5291.3</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>SNSGAII</td>
+<td>5614.0 [4110.3, 6416.0]</td>
+<td>6089.4 ± 3580.2</td>
+<td>9.16e-06*</td>
+<td>0.903</td>
+</tr>
+</tbody>
+</table>
+<p>Diferencia significativa tras corrección (p=4.58e-5). Acá se invierte la relación velocidad/
+calidad vista en el dataset 3: el algoritmo con <strong>menor</strong> HV final (SNSGAII) converge más rápido
+a su propio techo, mientras MOEACKF (mayor HV final) tarda ~2.4× más (mediana FE 13626 vs. 5614)
+en llegar al 95% del suyo, y según la curva todavía no se estabiliza del todo al final del
+presupuesto. Esto sugiere que MOEACKF podría beneficiarse de un presupuesto de FE aún mayor en
+problemas de alta dimensionalidad como Sonar — un experimento natural para trabajo futuro.</p>
+<h3 id="44-plataforma-snn-c-vs-ann-matlab-original">4.4 Plataforma: SNN (C++) vs. ANN (MATLAB original)</h3>
+<table>
+<thead>
+<tr>
+<th>Indicador</th>
+<th>MOEACKF: SNN</th>
+<th>MOEACKF: ANN-MATLAB</th>
+<th>p (Mann-Whitney)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HV</td>
+<td>0.8224 ± 0.0302, mediana 0.8274</td>
+<td>0.8744 ± 0.0141, mediana 0.8740</td>
+<td>5.89e-11*</td>
+<td>0.016</td>
+</tr>
+<tr>
+<td>Complejidad</td>
+<td>0.0792 ± 0.0953, mediana 0.0429</td>
+<td>0.0141 ± 0.0131, mediana 0.0097</td>
+<td>2.40e-06*</td>
+<td>0.849</td>
+</tr>
+<tr>
+<td>Accuracy</td>
+<td>0.8124 ± 0.0327, mediana 0.8204</td>
+<td>0.8629 ± 0.0158, mediana 0.8623</td>
+<td>4.93e-10*</td>
+<td>0.041</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Indicador</th>
+<th>SNSGAII: SNN</th>
+<th>SNSGAII: ANN-MATLAB</th>
+<th>p (Mann-Whitney)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HV</td>
+<td>0.7808 ± 0.0374, mediana 0.7812</td>
+<td>0.9086 ± 0.0132, mediana 0.9143</td>
+<td>1.40e-11*</td>
+<td>0.000</td>
+</tr>
+<tr>
+<td>Complejidad</td>
+<td>0.0188 ± 0.0141, mediana 0.0159</td>
+<td>0.4621 ± 0.4705, mediana 0.1503</td>
+<td>5.74e-07*</td>
+<td>0.132</td>
+</tr>
+<tr>
+<td>Accuracy</td>
+<td>0.7597 ± 0.0417, mediana 0.7605</td>
+<td>0.9150 ± 0.0163, mediana 0.9102</td>
+<td>1.32e-11*</td>
+<td>0.000</td>
+</tr>
+</tbody>
+</table>
+<p>Todo significativo tras corrección. Para SNSGAII, la brecha ANN-SNN de HV (0.909 vs. 0.781,
+~0.13) y de accuracy (0.915 vs. 0.760, ~0.155) es la más grande de los cuatro datasets — la alta
+dimensionalidad de Sonar parece penalizar más al sustrato SNN que al ANN, al menos para este
+algoritmo. La complejidad de MOEACKF es la <strong>única reversión</strong> de las ocho combinaciones
+plataforma×algoritmo del estudio: acá la red SNN de mejor accuracy (0.079) es más densa que la
+ANN (0.014) — en el resto de los casos donde hay una brecha clara de complejidad, es la ANN la
+más densa. Vale la pena señalar esta excepción explícitamente en la tesis en vez de darla por
+parte del patrón general.</p>
+<h3 id="45-bootstrap-vs-evaluación-completa">4.5 Bootstrap vs. evaluación completa</h3>
+<table>
+<thead>
+<tr>
+<th>Algoritmo</th>
+<th>Normal</th>
+<th>Bootstrap</th>
+<th>p (Wilcoxon)</th>
+<th>Â₁₂</th>
+<th>Tiempo mediano (×)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MOEACKF</td>
+<td>0.8224 ± 0.0302, mediana 0.8274</td>
+<td>0.8334 ± 0.0233, mediana 0.8356</td>
+<td>0.2241</td>
+<td>0.484</td>
+<td>1832 s → 9202 s (×5.0)</td>
+</tr>
+<tr>
+<td>SNSGAII</td>
+<td>0.7808 ± 0.0374, mediana 0.7812</td>
+<td>0.8020 ± 0.0315, mediana 0.8066</td>
+<td>0.0132*</td>
+<td>0.290</td>
+<td>1730 s → 11884 s (×6.9)</td>
+</tr>
+</tbody>
+</table>
+<p>Patrón inverso al del dataset 3: acá el bootstrap ayuda significativamente a SNSGAII (tras
+corrección, p=0.0264) pero no muestra efecto en MOEACKF (p=0.224, Â₁₂=0.484, prácticamente una
+moneda al aire). Entre los datasets 3 y 4 queda claro que el beneficio del bootstrap depende de
+la combinación dataset×algoritmo, no de una regla simple (&quot;siempre ayuda&quot; o &quot;ayuda siempre al
+mismo algoritmo&quot;) — se documenta como pregunta abierta en las limitaciones (§6).</p>
+<h3 id="46-tiempo-de-cómputo">4.6 Tiempo de cómputo</h3>
+<table>
+<thead>
+<tr>
+<th>Grupo</th>
+<th>Mediana [IQR]</th>
+<th>Media ± DE</th>
+<th>p (Wilcoxon)</th>
+<th>Â₁₂</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MOEACKF</td>
+<td>715.1 [525.9, 865.2] s</td>
+<td>747.4 ± 259.5 s</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>SNSGAII</td>
+<td>295.5 [294.0, 298.2] s</td>
+<td>295.7 ± 4.1 s</td>
+<td>6.10e-05*</td>
+<td>1.000</td>
+</tr>
+</tbody>
+</table>
+<p>Diferencia significativa y la más extrema del estudio: Â₁₂=1.000, SNSGAII más rápido en las 15
+corridas pareadas, sin una sola excepción. MOEACKF es aquí ~2.4× más lento (715 vs. 296 s
+medianos) y con una variabilidad de tiempo mucho mayor (DE=259.5s, muy por encima del resto de
+los datasets) — consistente con que su mecanismo de fusión de conocimiento entre escalas
+(SVD, análisis de dispersión) escala peor con la dimensionalidad (60 features) que los
+operadores más simples de SNSGAII.</p>
+<h2 id="5-síntesis-entre-datasets-descriptiva-no-un-test-adicional">5. Síntesis entre datasets (descriptiva, no un test adicional)</h2>
+<p>Siguiendo el requisito de no mezclar datasets en una misma prueba estadística, esta sección es
+puramente <strong>descriptiva</strong> (en el espíritu de Demšar, 2006).</p>
+<p><strong>HV principal</strong>: SNSGAII gana en 2 de 4 datasets (ds1, ds3), MOEACKF en 1 (ds4), y en 1 no hay
+diferencia significativa (ds2) — sin cambios respecto al análisis original. Se mantiene la
+hipótesis (no probada estadísticamente con solo 4 puntos) de que SNSGAII rinde mejor en datasets
+de menor dimensionalidad (14 y 24 features) y MOEACKF en el de mayor dimensionalidad (60
+features), con el de dimensionalidad intermedia (18 features) sin diferencia. Los ángulos nuevos
+refuerzan esta lectura con más textura:</p>
+<ul>
+<li><strong>Frentes</strong>: en ds1 y ds3 (los que gana SNSGAII), su solución de mejor accuracy es más densa
+y más precisa que la de MOEACKF; en ds4 (que gana MOEACKF) el patrón es idéntico pero con los
+roles invertidos — MOEACKF es el que gana en densidad y precisión a la vez. El C-metric del
+frente combinado es más parejo en ds2/ds3 (0.50/0.50, 0.31/0.33) y muy asimétrico en ds4
+(0.86/0.14 a favor de MOEACKF) — el dataset con la victoria de HV más contundente es también
+el de dominancia punto-a-punto más contundente.</li>
+<li><strong>Convergencia</strong>: en los tres datasets donde hay una diferencia clara de HV (ds1, ds3, ds4), el
+algoritmo que <strong>pierde</strong> en HV final es sistemáticamente el que converge más rápido a su propio
+techo (Â₁₂ de velocidad ≈0.00 para MOEACKF en ds1/ds3, ≈0.90 para MOEACKF en ds4, siempre a
+favor del algoritmo de menor HV). Plateau rápido en un techo bajo vs. ascenso lento a un techo
+alto parece ser un trade-off recurrente en este estudio, no ruido de una sola corrida.</li>
+<li><strong>Tiempo</strong>: SNSGAII es más rápido en los cuatro datasets, pero la brecha crece marcadamente con
+la dimensionalidad — de ~6–10% en ds1–ds3 (14–24 features) a ~2.4× en ds4 (60 features,
+Â₁₂=1.000). Esto es consistente con que MOEACKF consume más FE por generación que SNSGAII (ver
+metodología §3.3) y que ese costo adicional escala con el tamaño del problema.</li>
+<li><strong>Plataforma</strong>: el hallazgo más uniforme de todo el análisis — la ANN original (MATLAB) supera
+a la SNN en HV y accuracy en las <strong>8 de 8</strong> combinaciones dataset×algoritmo, siempre
+significativo tras corrección. La brecha de accuracy es más chica en ds1 (~0.02) y más grande
+en ds4 para SNSGAII (~0.155). El gap de complejidad ANN-vs-SNN de SNSGAII (extremo en ds2/ds3,
+moderado en ds1/ds4) es sistemáticamente mayor que el de MOEACKF (siempre moderado) — un patrón
+algoritmo-dependiente que se repite entre datasets y podría merecer investigación aparte.</li>
+<li><strong>Bootstrap</strong>: mejora el HV de forma clara y consistente en ds1 y ds2 (ambos algoritmos, efecto
+grande en los dos), pero es mixto en ds3 (solo ayuda a MOEACKF) y ds4 (solo ayuda a SNSGAII) —
+no hay una regla simple, y el costo de tiempo (×4.8 a ×15.1) es siempre sustancial
+independientemente de si el HV mejora o no.</li>
+</ul>
+<p>También se mantiene la observación original: en 3 de los 4 datasets (ds1, ds2, ds3) MOEACKF
+muestra menor varianza entre corridas que SNSGAII en HV, incluso cuando pierde en mediana — es
+decir, MOEACKF tiende a ser más consistente/predecible. Si el criterio de la tesis valora
+reproducibilidad además de desempeño puntual, esto sigue siendo relevante más allá de qué
+algoritmo &quot;gana&quot; cada test.</p>
+<h2 id="6-limitaciones-de-este-análisis">6. Limitaciones de este análisis</h2>
+<ul>
+<li><strong>Accuracy de test</strong>: limitación <strong>estructural</strong>, no pendiente. El 100% de las corridas
+archivadas en <code>normal_results</code> y <code>bootstrap_results</code> usan arquitectura de 2 salidas (WTA), y el
+código solo exporta <code>*_spikes.csv</code> (necesarios para reconstruir accuracy de test) cuando
+<code>nOutputs == 1</code>. No se puede, con los datos actuales, medir generalización directamente; el
+análisis de frentes (§1.2–§4.2 de este documento) es el sustituto que sí es posible, mirando la
+relación complejidad-error de todo el frente en vez de un accuracy de test puntual.</li>
+<li><strong>Datasets 5 y 6 (Iris, Wine) no tienen resultados corridos</strong> en ninguna de las cuatro fuentes
+— las conclusiones de este documento cubren únicamente Statlog Australian, Climate, German y
+Sonar.</li>
+<li><strong>Tiempo de cómputo</strong>: <code>normal_results</code> y <code>bootstrap_results</code> siguen sin comparación válida de
+<code>time_s</code> (paralelismo/hilos no controlados entre tandas de ejecución). Solo <code>time_experiments</code>
+(§1.6–§4.6) permite una comparación de tiempo válida, pero corrió con hiperparámetros
+compartidos (no afinados por algoritmo) — sus conclusiones de tiempo no deben mezclarse con las
+conclusiones de calidad (HV) del resto del análisis, que sí usa hiperparámetros afinados.</li>
+<li><strong>Comparación de plataforma (SNN vs. ANN)</strong>: MATLAB/PlatEMO original y el port en C++ difieren
+en más que el modelo de neurona — implementación y generador de números aleatorios distintos, y
+sin columna de seed en los datos de MATLAB no hay forma de aislar esa diferencia. Los resultados
+de §1.4–§4.4 deben leerse como evidencia direccional (la ANN supera consistentemente a la SNN),
+no como una atribución causal limpia al hecho de ser spiking.</li>
+<li><strong>Bootstrap</strong>: el régimen de evaluación cambia el ruido de la señal de fitness; el efecto sobre
+el HV final es mixto entre dataset y algoritmo (§3.5, §4.5) sin un patrón simple identificado —
+queda como pregunta abierta si existe alguna interacción entre el remuestreo y los mecanismos
+específicos de cada algoritmo (p.ej. el filtro de Kalman de MOEACKF).</li>
+<li><strong>C-metric sobre frentes combinados pequeños</strong>: los frentes combinados de 31 corridas quedan en
+4–14 puntos tras deduplicar y filtrar no-dominados — la resolución de la métrica de cobertura es
+limitada con conjuntos tan chicos; se reporta como magnitud aproximada, no como proporción de
+alta precisión.</li>
+<li><strong>FE aproximado en convergencia</strong>: <code>convergence.csv</code> no registra FE por fila, solo <code>generation</code>,
+que no es comparable entre algoritmos (MOEACKF consume más FE por generación que SNSGAII). El
+eje FE de las curvas y umbrales de velocidad (§1.3–§4.3) es una aproximación por interpolación
+lineal dentro de cada corrida, no un valor exacto por fila.</li>
+</ul>
+
+            
+            
+        </body>
+        </html>
