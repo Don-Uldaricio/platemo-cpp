@@ -44,7 +44,7 @@ ARCHITECTURES = {
 
 # nHidden values evaluated per trial — hyperparameters are optimized for robustness
 # across all these network sizes rather than any single size.
-NHIDDENS_EVAL = [20, 100, 200]
+NHIDDENS_EVAL = [20, 40, 80]
 
 # Dataset filenames in order (index = dataNo - 1)
 _DATASET_FILENAMES = [
