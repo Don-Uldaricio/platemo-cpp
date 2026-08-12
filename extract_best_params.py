@@ -34,17 +34,21 @@ def parse_study_name(name: str):
 
 
 def params_to_flags(params: dict) -> str:
-    """Convert Optuna best_trial.params dict to platemo_cpp CLI flags string."""
+    """Convert Optuna best_trial.params dict to platemo_cpp CLI flags string.
+
+    dt/encoding_duration/extra_eval are intentionally NOT emitted here: they are
+    fixed simulation constants (not searched, see bayesian_search.py), applied
+    uniformly by run_experiments.sh's global DT/ENCODING_DUR/EVAL_DUR — which
+    override anything in this string, so a combination-specific dt can never
+    sneak back in. params.get() (not params[]) keeps this working against older
+    study DBs that still have those keys; they're simply ignored.
+    """
     arch_id = params.get("architecture", 1)
     arch    = ARCHITECTURES[arch_id]
 
     s_lower = params["sLower"]
     s_gap   = params["sGap"]
     s_upper = min(s_lower + s_gap, 1.0)
-
-    enc      = params["encoding_duration"]
-    extra    = params["extra_eval"]
-    eval_dur = enc + extra
 
     parts = [
         f"--fitness-mode {arch['fitness_mode']}",
@@ -58,9 +62,6 @@ def params_to_flags(params: dict) -> str:
         f"--sLower {s_lower}",
         f"--sUpper {s_upper:.4f}",
         f"--wscale {params['wScale']}",
-        f"--dt {params['dt']}",
-        f"--encoding-duration {enc}",
-        f"--eval-duration {eval_dur:.2f}",
     ]
     if arch["encoder"] == "poisson":
         parts += [

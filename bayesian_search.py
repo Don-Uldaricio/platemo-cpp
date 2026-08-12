@@ -63,6 +63,14 @@ def infer_nfeatures(dataset: int, datapath: str) -> int:
 
 # Grillas para modo discreto: valores candidatos por parámetro.
 # Editá estas listas si querés ampliar o reducir el espacio de búsqueda.
+#
+# NOTA: dt, encoding_duration y eval_duration NO están acá — son parámetros de
+# simulación (paso de integración del solver y ventanas temporales), no
+# hiperparámetros de la red. Buscarlos con Optuna permite que el optimizador
+# "explote" el error numérico del integrador (dt grueso = Euler impreciso)
+# para inflar el HV en vez de encontrar redes genuinamente mejores. Por eso se
+# fijan por CLI (--dt/--encoding-duration/--eval-duration) y quedan constantes
+# para todos los trials, algoritmos y datasets. Ver discusión metodológica.
 DISCRETE_GRIDS = {
     "disC":               [5, 10, 20, 50],
     "disM":               [5, 10, 20, 50],
@@ -72,9 +80,6 @@ DISCRETE_GRIDS = {
     "sLower":             [0.50, 0.60, 0.70, 0.75, 0.80, 0.90, 0.95],
     "sGap":               [0.10, 0.20, 0.30],
     "wScale":             [1.0, 2.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0],
-    "dt":                 [0.1, 0.25, 0.5, 1.0, 2.0],
-    "encoding_duration":  list(range(10, 160, 10)),   # [10,20,...,150] — 15 valores
-    "extra_eval":         list(range(10, 210, 10)),   # [10,20,...,200] — 20 valores
     # Poisson-only parameters
     "max_rate":           [20, 50, 100, 200, 300, 500],
     "refractory_period":  list(range(1, 6)),          # [1,2,...,15] ms — 15 valores
@@ -101,10 +106,8 @@ def run_binary(params: dict, fixed: dict, nhidden: int, seed: int, timeout: int,
     cmd += ["--sUpper", str(params["sUpper"])]
     cmd += ["--wscale", str(params["wScale"])]
 
-    # SNN timing params
-    cmd += ["--dt",                str(params["dt"])]
-    cmd += ["--encoding-duration", str(params["encoding_duration"])]
-    cmd += ["--eval-duration",     str(params["evaluation_duration"])]
+    # dt/encoding-duration/eval-duration vienen de `fixed` (ya volcados arriba
+    # por el loop genérico) — son constantes de simulación, no hiperparámetros.
 
     # Poisson-only params (omitted for TTFS)
     if "max_rate" in params:
@@ -200,11 +203,6 @@ def build_objective(fixed: dict, nhiddens: list, timeout: int,
 
             params["wScale"] = cat("wScale")
 
-            # SNN timing hyperparameters
-            params["dt"]  = cat("dt")
-            enc_dur       = cat("encoding_duration")
-            extra_eval    = cat("extra_eval")
-
             # Poisson-only hyperparameters (not used by TTFS encoder)
             if use_poisson:
                 params["max_rate"]          = cat("max_rate")
@@ -223,13 +221,6 @@ def build_objective(fixed: dict, nhiddens: list, timeout: int,
 
             params["wScale"] = trial.suggest_float("wScale", 1.0, 50.0, log=True)
 
-            # dt — discrete (standard SNN timesteps: 0.1, 0.25, 0.5, 1.0, 2.0 ms)
-            params["dt"] = trial.suggest_categorical("dt", DISCRETE_GRIDS["dt"])
-
-            # Timing — enteros con paso 10 (TPE interpola como escala ordinal)
-            enc_dur    = trial.suggest_int("encoding_duration", 10, 150, step=10)
-            extra_eval = trial.suggest_int("extra_eval", 10, 200, step=10)
-
             # Poisson-only hyperparameters
             if use_poisson:
                 params["max_rate"]          = trial.suggest_float("max_rate", 20.0, 200.0, log=True)
@@ -247,11 +238,6 @@ def build_objective(fixed: dict, nhiddens: list, timeout: int,
 
             params["wScale"] = trial.suggest_float("wScale", 1, 20.0, log=True)
 
-            # SNN timing hyperparameters
-            params["dt"]   = trial.suggest_float("dt", 0.1, 2.0)
-            enc_dur        = trial.suggest_float("encoding_duration", 10.0, 150.0)
-            extra_eval     = trial.suggest_float("extra_eval", 10.0, 200.0)
-
             # Poisson-only hyperparameters (not used by TTFS encoder)
             if use_poisson:
                 params["max_rate"]          = trial.suggest_float("max_rate", 20.0, 500.0, log=True)
@@ -259,8 +245,6 @@ def build_objective(fixed: dict, nhiddens: list, timeout: int,
 
         params["sLower"] = s_lower
         params["sUpper"] = min(s_lower + s_gap, 1.0)
-        params["encoding_duration"]   = enc_dur
-        params["evaluation_duration"] = enc_dur + extra_eval
 
         hv = run_binary_multi_nhidden(params, trial_fixed, nhiddens, seed=trial.number,
                                       timeout=timeout, maxfe=maxfe)
@@ -300,9 +284,30 @@ def main():
     parser.add_argument("--mode", choices=["continuous", "discrete", "mixed"], default="continuous",
                         help="Search space type: 'continuous' (float ranges), "
                              "'discrete' (categorical grids in DISCRETE_GRIDS), or "
-                             "'mixed' (continuous log for MOEA operators/wScale/timing, "
-                             "discrete for dt/sLower/sGap/refractory_period)")
+                             "'mixed' (continuous log for MOEA operators/wScale, "
+                             "discrete for sLower/sGap/refractory_period)")
+    parser.add_argument("--dt", type=float, default=1.0,
+                        help="FIXED integration timestep in ms (NOT searched — dt is a "
+                             "numerical-solver parameter, not a network hyperparameter; "
+                             "letting Optuna pick it lets coarse/inaccurate integration "
+                             "masquerade as better fitness). Default matches "
+                             "run_experiments.sh's DT. Validate with a convergence study "
+                             "before changing it. (default: 1.0)")
+    parser.add_argument("--encoding-duration", type=float, default=75.0,
+                        help="FIXED Poisson encoding window in ms (NOT searched). "
+                             "Default matches run_experiments.sh's ENCODING_DUR so BO "
+                             "search and final comparison runs share the same simulation "
+                             "window. (default: 75.0)")
+    parser.add_argument("--eval-duration", type=float, default=150.0,
+                        help="FIXED total simulation window in ms (NOT searched); "
+                             "must be > --encoding-duration. Default matches "
+                             "run_experiments.sh's EVAL_DUR. (default: 150.0)")
     args = parser.parse_args()
+
+    if args.eval_duration <= args.encoding_duration:
+        print(f"ERROR: --eval-duration ({args.eval_duration}) must be > "
+              f"--encoding-duration ({args.encoding_duration})", file=sys.stderr)
+        sys.exit(1)
 
     if not BINARY.exists():
         print(f"ERROR: binary not found at {BINARY}", file=sys.stderr)
@@ -318,6 +323,12 @@ def main():
         "popsize":  args.popsize,
         "runs":     1,
         "datapath": args.datapath,
+        # Simulation constants — fixed by CLI, NOT part of the search space
+        # (dt is the ODE solver's integration step, not a network hyperparameter;
+        # see methodological discussion — must not be co-optimized with fitness).
+        "dt":                 args.dt,
+        "encoding-duration":  args.encoding_duration,
+        "eval-duration":      args.eval_duration,
     }
     # fitness-mode, binary-outputs and encoder are selected per-trial (architecture hyperparameter)
 
@@ -333,6 +344,9 @@ def main():
     print(f"  BO trials    : {args.trials}")
     print(f"  Mode         : {args.mode}")
     print(f"  Storage      : {args.storage}")
+    print(f"  dt (fixed)               : {args.dt} ms  [NOT searched]")
+    print(f"  encoding-duration (fixed): {args.encoding_duration} ms  [NOT searched]")
+    print(f"  eval-duration (fixed)    : {args.eval_duration} ms  [NOT searched]")
     print("=" * 60)
 
     import optuna
@@ -360,10 +374,9 @@ def main():
     for k, v in bt.params.items():
         print(f"    {k:25s} = {v}")
 
-    enc = bt.params.get("encoding_duration", 50.0)
-    extra = bt.params.get("extra_eval", 50.0)
-    print(f"\n  Note: evaluation_duration = encoding_duration + extra_eval"
-          f" = {enc:.1f} + {extra:.1f} = {enc+extra:.1f} ms")
+    print(f"\n  Fixed simulation params (not searched): dt={args.dt} ms, "
+          f"encoding-duration={args.encoding_duration} ms, "
+          f"eval-duration={args.eval_duration} ms")
 
     # Reproduce command for one representative nhidden
     best_arch = ARCHITECTURES[bt.params.get("architecture", 1)]
@@ -390,9 +403,9 @@ def main():
         f"--sLower {sL:.4f}",
         f"--sUpper {min(sL + sG, 1.0):.4f}",
         f"--wscale {bt.params.get('wScale', 1):.4f}",
-        f"--dt {bt.params.get('dt', 1):.4f}",
-        f"--encoding-duration {enc:.2f}",
-        f"--eval-duration {enc+extra:.2f}",
+        f"--dt {args.dt:.4f}",
+        f"--encoding-duration {args.encoding_duration:.2f}",
+        f"--eval-duration {args.eval_duration:.2f}",
     ]
     if best_arch["encoder"] == "poisson":
         cmd_parts += [

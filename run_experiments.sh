@@ -56,7 +56,12 @@ PROSM=1.0     # sparsity mutation probability multiplier
 SLOWER=0.5   # VSSPS minimum sparsity (min fracción de ceros en inicialización)
 SUPPER=1.0    # VSSPS maximum sparsity
 
-# SNN simulation timing
+# SNN simulation timing — FIJOS: dt es el paso de integración del solver
+# (Euler explícito de las ecuaciones de Izhikevich), no un hiperparámetro de
+# la red. Se fijan por igual para todos los algoritmos/datasets/combinaciones
+# y NUNCA se sobreescriben desde params_table.sh (ver run_one(): se agregan
+# al final del comando, después de $extra_params, para que ganen siempre).
+# Justificar el valor con un estudio de convergencia numérica antes de tocarlo.
 DT=1.0              # timestep (ms)
 ENCODING_DUR=75.0   # ventana de codificación Poisson (ms)
 EVAL_DUR=150.0      # ventana total de simulación (ms); debe ser > ENCODING_DUR
@@ -150,11 +155,15 @@ run_one() {
     if [[ -z "$extra_params" ]]; then
         extra_params="--disC $DISC --disM $DISM --proM $PROM --disSM $DISSM --proSM $PROSM \
                       --sLower $SLOWER --sUpper $SUPPER --wscale $WSCALE \
-                      --dt $DT --encoding-duration $ENCODING_DUR --eval-duration $EVAL_DUR \
                       --max-rate $MAX_RATE --refractory-period $REFRAC \
                       --binary-outputs $BINARY_OUTPUTS --encoder $ENCODER \
                       --fitness-mode $FITNESS_MODE --threshold $ACCURACY_THRESHOLD"
     fi
+    # dt/encoding-duration/eval-duration NO se leen de params_table.sh — son
+    # constantes de simulación fijadas arriba (DT/ENCODING_DUR/EVAL_DUR) y se
+    # agregan siempre al final del comando (ver más abajo) para que ninguna
+    # entrada vieja de params_table.sh (generada antes de este fix) pueda
+    # reintroducir un dt distinto por algoritmo/dataset.
 
     # Spike counts para ROC/AUC (solo binario: nClasses==2, datasets 1-5)
     local spikes_flag=""
@@ -175,6 +184,7 @@ run_one() {
         --seed     "$seed"     \
         --datapath "$DATAPATH" \
         $extra_params          \
+        --dt "$DT" --encoding-duration "$ENCODING_DUR" --eval-duration "$EVAL_DUR" \
         --csv-out  "$out"      \
         --conv-out "$conv_out" \
         --out      "$front_out" \
