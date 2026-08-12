@@ -223,7 +223,7 @@ Las trayectorias de convergencia del HV medio por \emph{trial} muestran que ambo
     \label{fig:comparacion_hv_ds1}
 \end{figure}
 
-El análisis de importancia de hiperparámetros indica que la escala de pesos (\texttt{wScale}) es el parámetro más influyente en tres de los cuatro estudios considerados, concentrando entre un 73\% y un 96\% de la varianza explicada; la excepción es el caso de S-NSGA-II, donde \texttt{wScale} (52\%) y \texttt{sLower} (39\%) se reparten la mayor parte de la contribución al HV. Estas relaciones se muestran en las Figuras~\ref{fig:ds1_fanova_ckf} y~\ref{fig:ds1_fanova_nsga}.
+El análisis de importancia de hiperparámetros indica que la escala de pesos (\texttt{wScale}) es el parámetro más influyente en tres de los cuatro estudios considerados, concentrando entre un 73\% y un 96\% de la varianza explicada; la excepción es el caso de S-NSGA-II, donde \texttt{wScale} (52\%) y \texttt{sLower} (39\%) se reparten la mayor parte de la contribución al HV. Estas relaciones se muestran en las Figuras~\ref{fig:ds1_fanova_ckf} y~\ref{fig:ds1_fanova_nsga}, y son coherentes con el papel de \texttt{wScale} como amplificador necesario para que las conexiones codificadas entre [0,1] generen disparos efectivos en la red, mientras que los límites de esparsidad determinan qué regiones del espacio de soluciones son exploradas con mayor intensidad.
 
 \begin{figure}[htbp]
     \centering
@@ -245,6 +245,8 @@ El análisis de importancia de hiperparámetros indica que la escala de pesos (\
     \caption{Importancia de hiperparámetros en \texttt{ds1} para ambos algoritmos.}
     \label{fig:importancia_hiper_ds1}
 \end{figure}
+
+En conjunto, los resultados de \texttt{ds1} sugieren que, bajo un mismo presupuesto de búsqueda y un espacio común de configuración, MOEA-CKF y S-NSGA-II son capaces de alcanzar configuraciones de rendimiento prácticamente equivalente, con diferencias atribuibles más a la forma en que cada algoritmo ajusta los hiperparámetros que a una ventaja sistemática de uno sobre otro.
 
 \subsubsection{Dataset 2: Climate}
 
@@ -318,7 +320,7 @@ El análisis fANOVA en \texttt{ds2} muestra que la variable \texttt{architecture
 
 En este dataset S-NSGA-II supera a MOEA-CKF por el margen más amplio entre los cuatro datasets, con HV medio 0.7704 frente a 0.7540. Ambas configuraciones ganadoras emplean arquitecturas de dos salidas con exactitud y WTA, pero difieren en el codificador y en varios hiperparámetros continuos, incluyendo \texttt{wScale}, \texttt{dt} y los límites de esparsidad. La Tabla~\ref{tab:hiper_mejor_config} muestra que MOEA-CKF selecciona \texttt{dt} más grueso (2.0,ms) y bandas de esparsidad orientadas a redes muy esparsas (\texttt{sLower} cercana a 0.91), mientras que S-NSGA-II combina \texttt{dt} fino (0.1,ms) con bandas de esparsidad más densas.
 
-Las Figuras~\ref{fig:ds3_convergencia_ckf} y~\ref{fig:ds3_convergencia_nsga} ilustran las trayectorias de convergencia del HV medio por \emph{trial} en \texttt{ds3} para ambos algoritmos. Se observa que S-NSGA-II alcanzó valores de HV más altos y mantiene un rendimiento más estable en las últimas iteraciones.
+Las Figuras~\ref{fig:ds3_convergencia_ckf} y~\ref{fig:ds3_convergencia_nsga} ilustran las trayectorias de convergencia del HV medio por \emph{trial} en \texttt{ds3} para ambos algoritmos. Se observa que S-NSGA-II alcanzó valores de HV más altos y mantiene un rendimiento más estable en las últimas iteraciones, lo que sugiere que el ajuste de hiperparámetros encontrado por este algoritmo explota de manera más eficaz el espacio de búsqueda para este dataset.
 
 \begin{figure}[htbp]
     \centering
@@ -340,7 +342,7 @@ Las Figuras~\ref{fig:ds3_convergencia_ckf} y~\ref{fig:ds3_convergencia_nsga} ilu
     \label{fig:comparacion_hv_ds3}
 \end{figure}
 
-En cuanto a la importancia de hiperparámetros, el análisis fANOVA indica que \texttt{wScale} vuelve a ser el hiperparámetro más influyente en tres de los cuatro estudios, concentrando entre un 73\% y un 96\% de la varianza explicada, mientras que en el caso restante la varianza se reparte entre \texttt{wScale} y los límites de esparsidad. Las Figuras~\ref{fig:ds3_fanova_ckf} y~\ref{fig:ds3_fanova_nsga} reflejan este patrón.
+En cuanto a la importancia de hiperparámetros, el análisis fANOVA indica que \texttt{wScale} vuelve a ser el hiperparámetro más influyente en tres de los cuatro estudios, concentrando entre un 73\% y un 96\% de la varianza explicada, mientras que en el caso restante la varianza se reparte entre \texttt{wScale} y los límites de esparsidad. Las Figuras~\ref{fig:ds3_fanova_ckf} y~\ref{fig:ds3_fanova_nsga} reflejan este patrón, reforzando la interpretación de que la escala de pesos es un factor estructural clave para que la red codificada pueda aprovechar la información de entrada y disparar con suficiente resolución temporal.
 
 \begin{figure}[htbp]
     \centering
@@ -363,11 +365,13 @@ En cuanto a la importancia de hiperparámetros, el análisis fANOVA indica que \
     \label{fig:importancia_hiper_ds3}
 \end{figure}
 
+Este es el dataset donde S-NSGA-II obtiene la mayor ventaja en HV respecto de MOEA-CKF, por casi un 2\% lo que sugiere que la combinación de \texttt{dt} fino y ajustes de \texttt{wScale} y esparsidad encontrada por S-NSGA-II resulta particularmente adecuada para la dinámica temporal y la escala de entrada de este problema de clasificación.
+
 \subsubsection{Dataset 4: Connectionist Bench Sonar}
 
-En este dataset ambos algoritmos alcanzan HV medios cercanos, 0.8051 para MOEA-CKF y 0.8134 para S-NSGA-II, con trayectorias de convergencia similares entre sí. Las arquitecturas ganadoras tienen codificación TTFS en ambos casos, pero difieren en varios hiperparámetros continuos y discretos, incluyendo \texttt{wScale}, \texttt{dt} y los parámetros de esparsidad.
+En este dataset ambos algoritmos alcanzan HV medios cercanos, 0.8051 para MOEA-CKF y 0.8134 para S-NSGA-II, con trayectorias de convergencia similares entre sí. Las arquitecturas ganadoras tienen codificación TTFS en ambos casos, pero difieren en varios hiperparámetros continuos y discretos, incluyendo \texttt{wScale}, \texttt{dt} y los parámetros de esparsidad. Dado que este es el dataset con más atributos de entrada (60), estos resultados se interpretan como producto de un espacio de decisión menos consistente entre algoritmos, donde ningún hiperparámetro concentra por sí solo la mayor parte de la mejora de HV.
 
-Las Figuras~\ref{fig:ds4_convergencia_ckf} y~\ref{fig:ds4_convergencia_nsga} muestran las curvas de HV medio por \emph{trial} en \texttt{ds4}, evidenciando que tanto MOEA-CKF como S-NSGA-II logran convergencias estables y valores de HV comparables en las últimas iteraciones.
+Las Figuras~\ref{fig:ds4_convergencia_ckf} y~\ref{fig:ds4_convergencia_nsga} muestran las curvas de HV medio por \emph{trial} en \texttt{ds4}, evidenciando que tanto MOEA-CKF como S-NSGA-II logran convergencias estables y valores de HV comparables en las últimas iteraciones. Esto refuerza la conclusión de que el presupuesto común de evaluaciones FE y el espacio de configuración compartido son aprovechados de manera similar por ambos algoritmos también en el escenario de mayor dimensionalidad de entrada.
 
 \begin{figure}[htbp]
     \centering
@@ -389,7 +393,7 @@ Las Figuras~\ref{fig:ds4_convergencia_ckf} y~\ref{fig:ds4_convergencia_nsga} mue
     \label{fig:comparacion_hv_ds4}
 \end{figure}
 
-El análisis fANOVA en \texttt{ds4} muestra una repartición de importancia más equilibrada y divergente entre algoritmos: en MOEA-CKF domina \texttt{architecture} (34\%), seguido de \texttt{wScale} (22\%) y \texttt{dt} (10\%), mientras que en S-NSGA-II la mayor contribución corresponde a \texttt{sLower} (41\%), seguida de \texttt{wScale} (17\%) y \texttt{disC} (12\%). Estos patrones se visualizan en las Figuras~\ref{fig:ds4_fanova_ckf} y~\ref{fig:ds4_fanova_nsga}.
+El análisis fANOVA en \texttt{ds4} muestra una repartición de importancia más equilibrada y divergente entre algoritmos: en MOEA-CKF domina \texttt{architecture} (34\%), seguido de \texttt{wScale} (22\%) y \texttt{dt} (10\%), mientras que en S-NSGA-II la mayor contribución corresponde a \texttt{sLower} (41\%), seguida de \texttt{wScale} (17\%) y \texttt{disC} (12\%). Estos patrones se visualizan en las Figuras~\ref{fig:ds4_fanova_ckf} y~\ref{fig:ds4_fanova_nsga}, y sugieren que, en un espacio de alta dimensionalidad como \texttt{ds4}, la interacción entre arquitectura, escala de pesos, resolución temporal y límites de esparsidad es más compleja y menos dominada por unos pocos hiperparámetros.
 
 \begin{figure}[htbp]
     \centering
@@ -451,10 +455,10 @@ Los resultados descriptivos se resumen en la Tabla~\ref{tab:hv-summary} para los
 \paragraph{Dataset 1: Statlog Australian}\label{sec:ds1}\label{sec:ds1-hv}
 La prueba de Wilcoxon signed-rank arroja una diferencia significativa entre ambos algoritmos, que se mantiene tras la corrección. Esta diferencia se refleja también corrida por corrida: S-NSGA-II superó a MOEA-CKF en 21 de las 31 corridas pareadas (67.7\%), sin empates, lo que corresponde a un efecto a favor de S-NSGA-II.
 
-En este dataset, S-NSGA-II obtiene un HV estadísticamente superior al de MOEA-CKF, con un tamaño de efecto grande. MOEA-CKF es más consistente entre corridas: S-NSGA-II varía casi seis veces más y su corrida más baja queda por debajo del mínimo histórico de MOEA-CKF.
+En este dataset, S-NSGA-II obtiene un HV estadísticamente superior al de MOEA-CKF, con un tamaño de efecto grande que descarta que la diferencia sea marginal o producto del azar de una muestra pequeña. Sin embargo, MOEA-CKF es más consistente, mientras que S-NSGA-II varía casi seis veces más y su corrida más baja queda incluso por debajo del mínimo histórico de MOEA-CKF. Es decir, S-NSGA-II gana en la mayoría de las corridas, pero a costa de una mayor variabilidad entre ejecuciones.
 
 \paragraph{Dataset 2: Climate}\label{sec:ds2}\label{sec:ds2-hv}
-No se encuentra una diferencia significativa entre ambos algoritmos, y esta falta de significancia se mantiene tras corrección. S-NSGA-II superó a MOEA-CKF en 23 de las 31 corridas (74.2\%). S-NSGA-II gana más seguido, pero por márgenes mínimos (diferencia mediana de solo $0.00016$), mientras que en las pocas corridas donde gana MOEA-CKF lo hace por márgenes considerablemente mayores. En conjunto, no hay evidencia suficiente de una diferencia real entre ambos algoritmos en HV para este dataset.
+No se encuentra una diferencia significativa entre ambos algoritmos, y esta falta de significancia se mantiene tras corrección. S-NSGA-II superó a MOEA-CKF en 23 de las 31 corridas (74.2\%). S-NSGA-II gana más seguido, pero por márgenes mínimos (diferencia mediana de solo $0.00016$), mientras que en las pocas corridas donde gana MOEA-CKF lo hace por márgenes considerablemente mayores. En conjunto, no hay evidencia suficiente de una diferencia real entre ambos algoritmos en HV para este dataset, ya que ambos convergen a una región muy similar y estrecha del espacio de soluciones.
 
 \paragraph{Dataset 3: Statlog German}\label{sec:ds3}\label{sec:ds3-hv}
 Existe una diferencia altamente significativa entre ambos algoritmos, que se mantiene tras corrección. S-NSGA-II superó a MOEA-CKF en 24 de las 31 corridas (77.4\%), lo que corresponde a un efecto a favor de S-NSGA-II. La diferencia es la segunda mayor de los cuatro datasets. S-NSGA-II vuelve a mostrar mayor dispersión que MOEA-CKF, pero incluso su corrida más baja queda cerca de la mediana de MOEA-CKF.
@@ -462,7 +466,7 @@ Existe una diferencia altamente significativa entre ambos algoritmos, que se man
 \paragraph{Dataset 4: Sonar}\label{sec:ds4}\label{sec:ds4-hv}
 Existe una diferencia altamente significativa entre ambos algoritmos, que se mantiene tras corrección. MOEA-CKF superó a S-NSGA-II en 22 de las 31 corridas (71.0\%), lo que corresponde a un efecto a favor de MOEA-CKF.
 
-Este es el único dataset donde se invierte el patrón observado en los tres anteriores: MOEA-CKF supera a S-NSGA-II de forma significativa y con la mayor diferencia absoluta de HV observada en todo el estudio. Es, además, el dataset con mayor varianza para ambos algoritmos (60 características).
+Este es el único dataset donde se invierte el patrón observado en los tres anteriores: MOEA-CKF supera a S-NSGA-II de forma significativa y con la mayor diferencia absoluta de HV observada en todo el estudio. Es el dataset con mayor varianza para ambos algoritmos, lo cual es consistente con que es el de mayor dimensionalidad (60 características).
 
 \subsubsection{Frentes de Pareto}
 \label{sec:fronts}
@@ -553,9 +557,9 @@ $0.0166$* & 0.645 \\
 \end{table}
 
 \paragraph{Dataset 1: Statlog Australian}\label{sec:ds1-fronts}
-Las tres diferencias son significativas y se mantienen tras la corrección. S-NSGA-II tiene mayor complejidad en su mejor red, pero a cambio obtiene un error menor y retiene un frente de mayor tamaño.
+Las tres diferencias son significativas y se mantienen tras la corrección. S-NSGA-II tiene mayor complejidad en sus mejores red, pero a cambio obtiene un error menor y retiene un frente de mayor tamaño. Esto explica directamente la ventaja de HV descrita en \ref{sec:ds1-hv}, no se trata de una mejora uniforme, sino de un desplazamiento hacia soluciones más densas y más precisas en el extremo de alta precisión del frente.
 
-El 55.6\% de los puntos del frente combinado de S-NSGA-II están dominados por el de MOEA-CKF, y solo el 16.7\% en sentido inverso (Figura~\ref{fig:combined-front-ds1}).
+El 55.6\% de los puntos del frente combinado de S-NSGA-II están dominados por el de MOEA-CKF, y solo 16.7\% en sentido inverso. Este resultado (Figura~\ref{fig:combined-front-ds1}) matiza el hallazgo de HV: pese a tener menos puntos, el frente combinado de MOEA-CKF domina en mayor proporción al de S-NSGA-II que al revés. Esto indica que la ventaja de S-NSGA-II en HV proviene de cubrir una región más amplia del espacio de soluciones, y no de que cada punto individual de S-NSGA-II sea mejor que su contraparte de MOEA-CKF.
 
 \begin{figure}[htbp]
     \centering
@@ -578,10 +582,10 @@ El 55.6\% de los puntos del frente combinado de S-NSGA-II están dominados por e
     \label{fig:frente-bandas-ds1}
 \end{figure}
 
-Los deciles sobre el pool de puntos crudos de ambos algoritmos son mostrados en la Figura~\ref{fig:complexity-bands-ds1}. MOEA-CKF domina en las bandas de complejidad hasta $\sim0.0132$, con errores menores que S-NSGA-II en el mismo rango (p.\,ej.\ $0.143$ vs.\ $0.315$). S-NSGA-II solo iguala y supera levemente a MOEA-CKF en la banda más alta, pero es justamente ahí donde concentra la mayoría de sus puntos (37 de 189, frente a uno solo de MOEA-CKF).
+Los deciles sobre el pool de puntos crudos de ambos algoritmos son mostrados en la Figura~\ref{fig:complexity-bands-ds1}. MOEA-CKF domina en las bandas de complejidad hasta $\sim0.0132$, con errores menores que S-NSGA-II en el mismo rango (p.\,ej.\ $0.143$ vs.\ $0.315$). S-NSGA-II solo iguala y supera levemente a MOEA-CKF en la banda más alta, pero es justamente ahí donde concentra la mayoría de sus puntos (37 de 189, frente a uno solo de MOEA-CKF). Esto indica que el HV agregado de S-NSGA-II se explica por operar consistentemente en esa región de mayor complejidad y precisión, y no por dominar en todo el espectro.
 
 \paragraph{Dataset 2: Climate.}\label{sec:ds2-fronts}
-La complejidad y el tamaño de los frentes siguen siendo significativos tras corrección, mientras que el error de las mejores redes no lo es. En cuanto a complejidad, S-NSGA-II encuentra redes de mejor accuracy más pequeñas que MOEA-CKF con $\Atwelve=1.000$ (gana las 31 corridas), logrando un error de entrenamiento estadísticamente indistinguible del de MOEA-CKF. Este último necesita, en cambio, redes más densas y más variables. S-NSGA-II también retiene frentes más pequeños. En este caso la cobertura de los frentes combinados es perfectamente simétrica pese a la diferencia de tamaño (Figura~\ref{fig:combined-front-ds2}).
+La complejidad y el tamaño de los frentes siguen siendo significativos tras corrección, mientras que el error de las mejores redes no lo es. El resultado más llamativo es el de complejidad: S-NSGA-II encuentra redes de mejor accuracy más pequeñas que MOEA-CKF con $\Atwelve=1.000$ (gana las 31 corridas), logrando un error de entrenamiento estadísticamente indistinguible del de MOEA-CKF. Este último necesita, en cambio, redes más densas y más variables. S-NSGA-II también retiene frentes más pequeños. En este caso la cobertura de los frentes combinados es perfectamente simétrica pese a la diferencia de tamaño (Figura~\ref{fig:combined-front-ds2}).
 
 \begin{figure}[htbp]
     \centering
@@ -604,10 +608,10 @@ La complejidad y el tamaño de los frentes siguen siendo significativos tras cor
     \label{fig:frente-bandas-ds2}
 \end{figure}
 
-Los deciles sobre el pool de puntos crudos de ambos algoritmos son mostrados en la Figura \ref{fig:complexity-bands-ds2}. S-NSGA-II prácticamente no tiene puntos más allá de la banda de complejidad $0.0036$--$0.0048$: sus 31 corridas concentran casi toda su masa en las bandas de menor complejidad, donde su error es menor que el de MOEA-CKF en las mismas bandas.
+Los deciles sobre el pool de puntos crudos de ambos algoritmos son mostrados en la Figura \ref{fig:complexity-bands-ds2}. S-NSGA-II prácticamente no tiene puntos más allá de la banda de complejidad $0.0036$--$0.0048$: sus 31 corridas concentran casi toda su masa en las bandas de menor complejidad, donde su error es menor que el de MOEA-CKF en las mismas bandas. Parece ser un dataset donde S-NSGA-II se especializa en soluciones muy esparsas y lo hace con buenos resultados, mientras que MOEA-CKF explora más sin obtener una ganancia proporcional, lo cual es coherente con que el HV no distinga a los algoritmos (ver \ref{sec:ds2-hv}).
 
 \paragraph{Dataset 3: Statlog German.}\label{sec:ds3-fronts}
-Los tres indicadores resultan significativos tras corrección: S-NSGA-II incurre en más complejidad en sus mejores redes a cambio de un menor error y retiene frentes sustancialmente más grandes.
+Los tres indicadores resultan significativos tras corrección, reproduciendo el mismo patrón cualitativo observado en el dataset 1: S-NSGA-II incurre en más complejidad en sus mejores redes a cambio de un menor error y retiene frentes sustancialmente más grandes. De los cuatro datasets, este es el más consistente con la idea de que S-NSGA-II gana explorando redes más densas y numerosas.
 
 Como se observa en la Figura~\ref{fig:combined-front-ds3}, el \(30.8\%\) de las soluciones del frente combinado de S-NSGA-II son dominadas por alguna solución de MOEA-CKF. De manera recíproca, S-NSGA-II domina el \(33.3\%\) de las soluciones de MOEA-CKF. Aunque el frente combinado de S-NSGA-II contiene más del doble de soluciones, la cobertura mutua entre ambos métodos es similar. 
 
@@ -636,6 +640,8 @@ Como se observa en la Figura~\ref{fig:combined-front-ds3}, el \(30.8\%\) de las 
 
 La distribución del error según bandas de complejidad se presenta en la Figura~\ref{fig:complexity-bands-ds3}. En las bandas de menor complejidad, ambos algoritmos exhiben comportamientos comparables, con una leve ventaja de MOEA-CKF en algunos intervalos. Sin embargo, desde $\approx0.001$, S-NSGA-II comienza a obtener errores consistentemente menores que MOEA-CKF, y la diferencia se hace mantiene a medida que aumenta la complejidad de las soluciones.
 
+Los resultados sugieren que S-NSGA-II aprovecha de forma más efectiva el incremento de complejidad estructural en este conjunto de datos. Mientras que MOEA-CKF mantiene un comportamiento competitivo en soluciones muy dispersas, S-NSGA-II logra traducir la incorporación de conexiones adicionales en una reducción más sostenida del error. Esta capacidad es coherente con el mayor tamaño de su frente combinado y contribuye a explicar la ventaja de hipervolumen descrita en la Sección~\ref{sec:ds3-hv}: la ventaja no surge exclusivamente de producir un mayor número de soluciones, sino de extender el frente hacia regiones de mayor complejidad en las que dichas soluciones mantienen una mejor calidad predictiva.
+
 \paragraph{Dataset 4: Sonar}\label{sec:ds4-fronts}
 
 Los tres indicadores resultan significativos tras corrección. MOEA-CKF tiene redes con un error menor pero con mayor complejidad, sin embargo, retiene frentes más grandes.
@@ -661,7 +667,7 @@ Los tres indicadores resultan significativos tras corrección. MOEA-CKF tiene re
     \label{fig:frente-bandas-ds4}
 \end{figure}
 
-El 85.7\% de las soluciones del frente combinado de S-NSGA-II son dominadas por alguna solución del frente de MOEA-CKF. Al revés, solo el 14.3\% de las soluciones de MOEA-CKF son dominadas por alguna solución de S-NSGA-II, siendo el resultado más asimétrico de los cuatro datasets. Ambos frentes combinados tienen el mismo tamaño (Figura~\ref{fig:combined-front-ds4}).
+El 85.7\% de las soluciones del frente combinado de S-NSGA-II son dominados por alguna solución del frente de MOEA-CKF. Al revés, solo el 14.3\% de las soluciones de MOEA-CKF son dominadas por alguna solución de S-NSGA-II, siendo el resultado más asimétrico de los cuatro datasets. Pese a que ambos frentes combinados tienen el mismo tamaño (Figura~\ref{fig:combined-front-ds4}), este resultado muestra que uno de los algoritmos puede dominar punto por punto a otro, y no solo en el resumen agregado de HV.
 
 MOEA-CKF presenta un error menor que S-NSGA-II en casi todo el rango de complejidad (Figura \ref{fig:complexity-bands-ds4}), con S-NSGA-II apenas por delante en una banda alta y angosta (de muestra pequeña), y con MOEA-CKF como el único que alcanza la banda de mayor complejidad. La ventaja de MOEA-CKF en este dataset es amplia y no se concentra en una sola región del espacio de complejidad.
 
@@ -780,7 +786,7 @@ La diferencia para llegar el 95\% del HV final es significativa tras corrección
 
 Según la Figura~\ref{fig:convergence-ds4}, MOEA-CKF se mantiene por encima de S-NSGA-II durante todo el presupuesto y todavía sigue subiendo lentamente cerca de $\text{FE}=40000$, sin llegar a aplanarse del todo, mientras que S-NSGA-II se estabiliza antes ($\text{FE}\approx20000$--$25000$) en un nivel inferior.
 
-La diferencia en la convergencia es significativa tras corrección: el algoritmo con menor HV final (S-NSGA-II) converge más rápido a su propio techo, mientras que MOEA-CKF, con mayor HV final, tarda $\sim2.4\times$ más en llegar al 95\% del suyo y, según la curva, sin estabilizarse del todo al final del presupuesto.
+La diferencia en la convergencia es significativa tras corrección, y aquí se invierte la relación entre velocidad y calidad observada en el dataset 3: el algoritmo con menor HV final (S-NSGA-II) converge más rápido a su propio techo, mientras que MOEA-CKF, con mayor HV final, tarda $\sim2.4\times$ más en llegar al 95\% del suyo y, según la curva, sin estabilizarse del todo al final del presupuesto. 
 
 % Esto sugiere que MOEA-CKF podría beneficiarse de un presupuesto de FE aún mayor en problemas de alta dimensionalidad como este dataset, lo que constituye un experimento natural para trabajo futuro.
 
@@ -807,7 +813,7 @@ Esta sección compara cada algoritmo entre su implementación SNN (C++) sobre el
 
 \subsubsection{Dataset 1: Statlog Australian}
 \label{sec:ds1-plataforma}
-Las seis comparaciones (Tablas~\ref{tab:platform-MOEA-CKF-ds1} y \ref{tab:platform-S-NSGA-II-ds1}) son significativas y se mantienen tras corrección. La implementación original en ANN (MATLAB) supera de forma consistente a la SNN en HV y accuracy para ambos algoritmos, con una brecha de exactitud de $\sim0.02$ en los dos casos. Las redes de mayor exactitud en ANN también tienden a ser más densas en el caso de MOEA-CKF; en el caso de S-NSGA-II es similar, pero la media y el rango se disparan debido a algunas corridas en MATLAB que alcanzan redes casi densas.
+Las seis comparaciones (Tablas~\ref{tab:platform-MOEA-CKF-ds1} y \ref{tab:platform-S-NSGA-II-ds1}) son significativas y se mantienen tras corrección. La implementación original en ANN (MATLAB) supera de forma consistente a la SNN en HV y accuracy para ambos algoritmos, con una brecha de exactitud de $\sim0.02$ en los dos casos, un patrón esperable si se considera que la dinámica de disparo añade una capa de aproximación que una ANN estándar no enfrenta. Las redes de mayor exactitud en ANN también tienden a ser más densas en el caso de MOEA-CKF; en el caso de S-NSGA-II es similar, pero la media y el rango se disparan debido a algunas corridas en MATLAB que alcanzan redes casi densas.
 
 \begin{table}[htbp]
 \centering
@@ -893,7 +899,7 @@ Accuracy &  $0.9213\ [0.9190,\,0.9213]$ &  \cellcolor{gray!20}$0.9653\ [0.9630,\
 
 \subsubsection{Dataset 3: Statlog German}
 \label{sec:ds3-plataforma}
-Todas las comparaciones son significativas tras corrección (Tablas~\ref{tab:platform-MOEA-CKF-ds3} y \ref{tab:platform-S-NSGA-II-ds3}): las redes ANN de MOEA-CKF son más densas que las SNN, mientras que las redes ANN de S-NSGA-II vuelven a ser casi totalmente densas frente a redes SNN mucho más esparsas.
+Todas las comparaciones son significativas tras corrección (Tablas~\ref{tab:platform-MOEA-CKF-ds3} y \ref{tab:platform-S-NSGA-II-ds3}), reproduciendo el mismo patrón observado en el dataset 2: las redes ANN de MOEA-CKF son más densas que las SNN, mientras que las redes ANN de S-NSGA-II vuelven a ser casi totalmente densa frente a redes SNN mucho más esparsas.
 
 \begin{table}[htbp]
 \centering
@@ -936,7 +942,7 @@ Accuracy &  $0.7412\ [0.7306,\,0.7538]$ &  \cellcolor{gray!20}$0.7975\ [0.7963,\
 \subsubsection{Dataset 4: Sonar}
 \label{sec:ds4-plataforma}
 
-Todas las comparaciones son significativas tras corrección (Tablas~\ref{tab:platform-MOEA-CKF-ds4} y \ref{tab:platform-S-NSGA-II-ds4}). Para S-NSGA-II, la brecha ANN-SNN de HV y de exactitud es la más grande de los cuatro datasets. Para MOEA-CKF, en cambio, las redes SNN de mejor exactitud resultan más densas que las ANN, a diferencia del resto de las combinaciones con una brecha clara de complejidad, donde es la ANN la más densa.
+Todas las comparaciones son significativas tras corrección (Tablas~\ref{tab:platform-MOEA-CKF-ds4} y \ref{tab:platform-S-NSGA-II-ds4}). Para S-NSGA-II, la brecha ANN-SNN de HV y de exactitud es la más grande de los cuatro datasets. La complejidad de MOEA-CKF constituye, además, la única anomalía de las ocho combinaciones plataforma--algoritmo del estudio: aquí las redes SNN de mejor exactitud son más densas que las ANN, mientras que en el resto de los casos con una brecha clara de complejidad es la ANN la más densa.
 
 % lo que sugiere que la alta dimensionalidad de Sonar penaliza más a SNN que al ANN
 
@@ -1135,9 +1141,9 @@ ds4 Sonar      & SNSGAII & 31 & 270 & 85.7 & 25.2 & 6.5 \\
 \end{tabular}
 \end{table}
 
-En la totalidad de las 248 corridas, al menos una solución del frente presenta alguna clase desconectada; el 100\% de los frentes conserva su solución más dispersa con al menos una salida desconectada. El indicador de la última columna de la Tabla~\ref{tab:conectividad-resumen} —la solución de mejor accuracy de cada corrida— presenta una clase de salida desconectada en 0 de las 31 corridas de \texttt{ds1} y de \texttt{ds4}-MOEACKF, en las 31 corridas de \texttt{ds2}$\times$SNSGAII, y en 25 de las 31 corridas de \texttt{ds3}$\times$MOEACKF.
+El fenómeno es universal en un sentido trivial, y bastante menos universal en el sentido que efectivamente importa para la tesis. En la totalidad de las 248 corridas, al menos una solución del frente presenta alguna clase desconectada, pero esta cifra es en gran medida mecánica: dado que $f_1$ es un objetivo minimizado explícitamente, el punto de menor complejidad de cada frente casi siempre se ubica en el extremo de máxima dispersión o muy cerca de él, y de hecho el 100\% de los frentes conserva su solución más dispersa con al menos una salida desconectada. El indicador que sí resulta relevante es el de la última columna de la Tabla~\ref{tab:conectividad-resumen}: la solución de mejor accuracy de cada corrida presenta una clase de salida desconectada en ninguna de las 31 corridas de ds1 y de ds4-MOEACKF, pero en las 31 corridas de ds2$\times$SNSGAII y en 25 de las 31 corridas de ds3$\times$MOEACKF. Es decir, en al menos dos de las ocho combinaciones el algoritmo no solo genera redes rotas como subproducto de explorar la dispersión, sino que su mejor solución por accuracy es, de manera sistemática, una red que jamás puede predecir una de las dos clases.
 
-Se observa, además, una asimetría por clase que se repite de manera consistente dentro de cada dataset: en ds2 (Climate) es casi siempre la clase 0 la que queda sin conexión (entre 91.7\% y 100\% de las soluciones, frente a un 26.8\%--38.7\% para la clase 1), mientras que en ds3 (German) el patrón se invierte y es la clase 1 la que resulta sistemáticamente desconectada (90.1\% en MOEACKF y 31.1\% en SNSGAII, frente a 31.0\% y 15.2\% respectivamente para la clase 0).
+Se observa, además, una asimetría por clase que se repite de manera consistente dentro de cada dataset. En ds2 (Climate) es casi siempre la clase 0 la que queda sin conexión (entre 91.7\% y 100\% de las soluciones, frente a un 26.8\%--38.7\% para la clase 1), mientras que en ds3 (German) el patrón se invierte y es la clase 1 la que resulta sistemáticamente desconectada (90.1\% en MOEACKF y 31.1\% en SNSGAII, frente a 31.0\% y 15.2\% respectivamente para la clase 0). Esto es consistente con que ambos datasets presentan clases desbalanceadas, y con que ninguno de los operadores de dispersión descritos en la Sección~\ref{sec:conectividad-mecanismos} distingue entre clases al apagar pesos: la clase minoritaria de cada dataset queda, en consecuencia, estructuralmente más expuesta a perder toda su conexión de entrada.
 
 Por último, la versión estricta del chequeo de conectividad —la que excluye los caminos que dependen únicamente del sesgo— arroja un 51.8\% agrupado, frente al 47.1\% de la versión simple. La diferencia es pequeña: la gran mayoría de las neuronas ``vivas'' ya reciben al menos una variable de entrada real y no solo el sesgo, ya que los casos donde la única entrada activa es el sesgo representan menos del 1\% de las neuronas ocultas de todo el corpus. El criterio simple, en consecuencia, no subestima la magnitud del problema.
 
@@ -1147,7 +1153,7 @@ Por último, la versión estricta del chequeo de conectividad —la que excluye 
 Los tres ejemplos siguientes se seleccionaron mediante una regla explícita aplicada sobre la totalidad del corpus, y no de forma manual: el extremo estructural del fenómeno, el caso que afecta directamente a la solución que en la práctica se desplegaría, y un caso interior del frente que muestra que el fenómeno no está confinado a sus extremos. Los tres provienen de datasets con a lo más 40 variables de entrada (ds1 y ds2), de modo que el diagrama completo de la red resulta legible; en las tres figuras, las líneas dibujadas corresponden a la totalidad de las conexiones activas de esa solución en particular.
 
 \paragraph{Ejemplo A: extremo estructural.}
-Corresponde a ds1 (Australian) $\times$ MOEACKF, corrida 0, el punto de menor complejidad de su propio frente, con $f_1 = 0$: ninguno de los 680 pesos de la red está activo. Su accuracy es de 57.2\%, sus 40 neuronas ocultas están todas muertas, y ambas clases de salida presentan grado de entrada nulo, como se aprecia en la Figura~\ref{fig:conectividad-ejemplo-a}.
+Corresponde a ds1 (Australian) $\times$ MOEACKF, corrida 0, el punto de menor complejidad de su propio frente, con $f_1 = 0$: ninguno de los 680 pesos de la red está activo. Su accuracy es de 57.2\%, sus 40 neuronas ocultas están todas muertas, y ambas clases de salida presentan grado de entrada nulo, como se aprecia en la Figura~\ref{fig:conectividad-ejemplo-a}. Se trata del óptimo puro del objetivo de dispersión: una red completamente vacía que el algoritmo retiene en el frente de Pareto exactamente porque minimiza $f_1$ sin que exista ninguna restricción de conectividad que lo impida.
 
 \begin{figure}[htbp]
 \centering
@@ -1177,3 +1183,14 @@ corrida 0).}
 \label{fig:conectividad-ejemplo-c}
 \end{figure}
 
+\subsection{Por qué es un producto del algoritmo, y no del azar}
+\label{sec:conectividad-mecanismos}
+
+Ninguno de los mecanismos que apagan pesos durante la optimización posee noción alguna de a qué neurona o a qué salida pertenece cada sinapsis: todos operan gen por gen, o sobre un conteo u objetivo global de dispersión, sin considerar en ningún momento la estructura del grafo subyacente. En la inicialización de la red, cada gen se apaga de forma independiente con una probabilidad aproximada del 50\%, un procedimiento puramente bernoulliano que no distingue entre los pesos que alimentan una neurona oculta y los que alimentan una neurona de salida. En el caso de SNSGAII, el operador de inicialización construye, en cambio, una máscara de densidad organizada en franjas contiguas del vector de decisión, capaz de apagar de una sola vez filas completas de $W_1$, es decir, neuronas ocultas enteras; su operador de mutación de dispersión muta, por su parte, el nivel de dispersión objetivo de todo el individuo y luego apaga o reactiva pesos al azar hasta alcanzar ese nuevo nivel, otra vez sin mirar a qué neurona pertenece cada uno; y su operador de cruce intercambia al azar, entre los dos hijos, el estado activo o inactivo de los genes en los que los padres difieren. MOEACKF, por su parte, construye la máscara binaria de su primera generación activando un número aleatorio $k \in [1, D]$ de variables sobre el total de la red —pudiendo dejar tan solo una sinapsis activa de las $D$ totales—, sin ninguna garantía de que ese reducido conjunto toque siquiera una neurona de salida.
+
+La huella que deja cada algoritmo en los resultados agregados de la Sección~\ref{sec:conectividad-resultados} resulta consistente con su mecanismo particular. La máscara binaria de MOEACKF, gobernada por un parámetro $k$ global e indiferente al segmento del vector que activa, deja proporcionalmente más soluciones con alguna clase de salida completa sin ninguna conexión (56.5\% frente al 37.5\% de SNSGAII); la máscara en franjas contiguas de SNSGAII, en cambio, apaga con mayor frecuencia neuronas ocultas completas (87.4\% muertas en promedio, frente al 74.4\% de MOEACKF). Que dos mecanismos de dispersión distintos produzcan dos huellas de falla igualmente distintas es un indicio adicional de que el patrón observado proviene del diseño particular de cada operador, y no de una coincidencia compartida entre ambos algoritmos.
+
+\subsection{Trabajo futuro recomendado}
+\label{sec:conectividad-trabajo-futuro}
+
+Ninguna de estas causas se corrige evaluando de mejor manera la red resultante, sino interviniendo directamente en los operadores que deciden qué sinapsis permanecen activas. Queda como trabajo futuro —no implementado ni evaluado en el marco de esta tesis— explorar al menos cuatro direcciones de modificación sobre la codificación y los operadores actuales de ambos algoritmos. La primera consiste en incorporar un operador de reparación que se aplique después de cada mutación o cruce y antes de evaluar al individuo, capaz de detectar neuronas muertas o salidas con grado de entrada nulo y reactivar determinísticamente al menos una conexión hacia cada una de ellas. La segunda apunta a una inicialización consciente de la conectividad, que garantice, al construir cada individuo inicial, al menos un camino activo completo entre la entrada y cada clase de salida, en lugar de apagar genes de forma uniforme o por franjas sin considerar la estructura resultante. La tercera dirección consiste en operadores de mutación y cruce que protejan explícitamente la última conexión activa hacia una neurona de salida, o hacia una neurona oculta que constituya el único puente hacia esa salida, impidiendo que se apague por azar. La cuarta, finalmente, propone incorporar la conectividad de entrada a salida directamente en la función de aptitud —ya sea como objetivo adicional o como penalización— o como restricción de factibilidad, en lugar de dejar que dicha conectividad emerja únicamente como efecto colateral de minimizar $f_1$.
