@@ -10,11 +10,11 @@ TMPDIR=$RUN_DIR/tmp_runs
 CSVFILE=$RUN_DIR/results.csv
 CONVFILE=$RUN_DIR/convergence.csv
 
-ALGOS=(MOEACKF SNSGAII)
+ALGOS=(MOEACKF)
 DATASETS=(1)
-NHIDDENS=(20)
+NHIDDENS=(40)
 POPSIZE=100
-RUNS=6
+RUNS=31
 
 # maxFE por combinación algoritmo × dataset.
 # Convención de nombre: MAXFE_<ALGO>_<DS>
@@ -37,9 +37,9 @@ MAXFE_SNSGAII_4=40000
 MAXFE_SNSGAII_5=5000
 MAXFE_SNSGAII_6=5000
 SEED=50
-JOBS=$(nproc)       # parallel processes — tune to number of physical cores
+JOBS=2       # parallel processes — tune to number of physical cores
 # JOBS=6      # parallel processes — tune to number of physical cores
-OMP_THREADS=1       # OMP threads per process (inner parallelism);
+OMP_THREADS=25       # OMP threads per process (inner parallelism);
                     # increase only when reducing JOBS to avoid oversubscription
                     # e.g. JOBS=4, OMP_THREADS=4 on a 16-core machine
 WSCALE=15    # weight scale factor: pesos [0,1] × WSCALE antes de setWeights()
@@ -68,24 +68,25 @@ EVAL_DUR=150.0      # ventana total de simulación (ms); debe ser > ENCODING_DUR
 MAX_RATE=100.0      # PoissonEncoder max firing rate (Hz)
 REFRAC=3.0          # PoissonEncoder refractory period (ms)
 
-# Arquitectura SNN de salida — selector unificado:
-#   1 → AUC      + 1 neurona de salida + encoder Poisson  (default, clasificación binaria)
-#   2 → Accuracy + 2 neuronas de salida + encoder Poisson
-#   3 → Accuracy + 2 neuronas de salida + encoder TTFS
-#   4 → AUC      + 1 neurona de salida + encoder TTFS
+# Arquitectura SNN de salida — selector unificado.
+# Únicas dos arquitecturas soportadas (deben coincidir con ARCHITECTURES en
+# bayesian_search.py / extract_best_params.py): ambas en modo accuracy con
+# 2 neuronas de salida (decoder WTA), difieren solo en el encoder.
+#   1 → Accuracy + 2 neuronas de salida + encoder Poisson  (default)
+#   2 → Accuracy + 2 neuronas de salida + encoder TTFS
 # Dejar vacío ("") para controlar FITNESS_MODE / BINARY_OUTPUTS / ENCODER de forma manual.
 ARCHITECTURE=1
 
-# Valores manuales — se sobreescriben si ARCHITECTURE está seteada (1/2/3/4)
-FITNESS_MODE=auc        # "auc" o "accuracy"
-BINARY_OUTPUTS=1        # 1 → umbral/AUC  |  2 → WTA multiclase
+# Valores manuales — se sobreescriben si ARCHITECTURE está seteada (1/2)
+FITNESS_MODE=accuracy   # fijo: "accuracy" (WTA multiclase)
+BINARY_OUTPUTS=2        # fijo: 2 neuronas de salida
 ENCODER=poisson         # "poisson" o "ttfs"
 
 case "$ARCHITECTURE" in
-  1) FITNESS_MODE=auc;      BINARY_OUTPUTS=1; ENCODER=poisson ;;
-  2) FITNESS_MODE=accuracy; BINARY_OUTPUTS=2; ENCODER=poisson ;;
-  3) FITNESS_MODE=accuracy; BINARY_OUTPUTS=2; ENCODER=ttfs    ;;
-  4) FITNESS_MODE=auc;      BINARY_OUTPUTS=1; ENCODER=ttfs    ;;
+  1) FITNESS_MODE=accuracy; BINARY_OUTPUTS=2; ENCODER=poisson ;;
+  2) FITNESS_MODE=accuracy; BINARY_OUTPUTS=2; ENCODER=ttfs    ;;
+  "") ;;
+  *) echo "ERROR: ARCHITECTURE inválida '$ARCHITECTURE' (solo 1 o 2, o vacío para modo manual)" >&2; exit 1 ;;
 esac
 
 ACCURACY_THRESHOLD=1    # umbral fijo de spikes usado cuando FITNESS_MODE=accuracy
